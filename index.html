@@ -55,7 +55,11 @@
         .btn-success { background: #0f3460; color: white; border: 1px solid #e94560; }
         .btn-success:hover { background: #1a4a7a; }
         .btn-warning { background: #f39c12; color: #000; }
+        .btn-warning:hover { background: #e67e22; }
         .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-secondary { background: #7f8c8d; color: white; }
+        .btn-secondary:hover { background: #95a5a6; }
         .btn-sm { padding: 6px 12px; font-size: 0.8em; }
 
         .ingredient-row {
@@ -110,6 +114,10 @@
             margin-bottom: 10px;
             border-left: 4px solid #e94560;
         }
+        .menu-item.editing {
+            border-left: 4px solid #f39c12;
+            background: rgba(243, 156, 18, 0.1);
+        }
         .menu-item h4 { color: #fff; margin-bottom: 8px; }
         .menu-item .details { font-size: 0.9em; color: #bbb; }
         .menu-item .price-tag {
@@ -163,6 +171,26 @@
             margin-top: 10px;
             padding-top: 10px;
             border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .edit-mode-banner {
+            background: rgba(243, 156, 18, 0.2);
+            border: 1px solid #f39c12;
+            color: #f39c12;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-group .btn {
+            flex: 1;
         }
     </style>
 <base target="_blank">
@@ -243,7 +271,11 @@
         <div id="tab-resep" class="tab-content hidden">
             <div class="grid">
                 <div class="card">
-                    <h2>Buat Resep Menu</h2>
+                    <div class="edit-mode-banner" id="editModeBanner">
+                        ✏️ Mode Edit: <span id="editModeRecipeName"></span>
+                    </div>
+
+                    <h2 id="recipeFormTitle">Buat Resep Menu</h2>
                     <div class="form-group">
                         <label>Nama Menu</label>
                         <input type="text" id="menuName" placeholder="Contoh: Espresso Single">
@@ -316,7 +348,10 @@
                         </div>
                     </div>
 
-                    <button class="btn btn-primary" style="margin-top: 15px; width:100%;" onclick="saveRecipe()">💾 Simpan Resep</button>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="saveRecipeBtn" onclick="saveRecipe()">💾 Simpan Resep</button>
+                        <button class="btn btn-secondary hidden" id="cancelEditBtn" onclick="cancelEdit()">❌ Batal Edit</button>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -415,7 +450,7 @@
 
                         <div style="background: rgba(233, 69, 96, 0.1); padding: 15px; border-radius: 10px; border-left: 4px solid #e94560;">
                             <strong style="color:#e94560;">Tips:</strong>
-                            <p style="margin-top:8px; font-size:0.9em;">Jika margin < 50%, pertimbangkan untuk naikin harga atau turunin biaya bahan. Kalau margin > 80%, cek kembali apakah harga jual terlalu tinggi untuk pasar target.</p>
+                            <p style="margin-top:8px; font-size:0.9em;">Jika margin &lt; 50%, pertimbangkan untuk naikin harga atau turunin biaya bahan. Kalau margin &gt; 80%, cek kembali apakah harga jual terlalu tinggi untuk pasar target.</p>
                         </div>
                     </div>
                 </div>
@@ -448,6 +483,7 @@
         let ingredients = JSON.parse(localStorage.getItem('coffeeIngredients')) || [];
         let recipes = JSON.parse(localStorage.getItem('coffeeRecipes')) || [];
         let compRowCount = 1;
+        let editingRecipeId = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -495,7 +531,6 @@
             renderIngredients();
             updateIngredientSelects();
 
-            // Clear form
             document.getElementById('ingName').value = '';
             document.getElementById('ingPrice').value = '';
             document.getElementById('ingStock').value = '1';
@@ -542,7 +577,6 @@
                 select.value = currentVal;
             });
 
-            // Update pricing tab select
             const pricingSelect = document.getElementById('pricingMenuSelect');
             if(pricingSelect) {
                 const recipeOptions = recipes.map(r => 
@@ -600,11 +634,10 @@
             const ingredient = ingredients.find(i => i.id == ingId);
             if(!ingredient) return;
 
-            // Convert qty to small unit if needed
             let convertedQty = qty;
             if(unit === 'gr' && ingredient.smallUnit === 'gr') convertedQty = qty;
             if(unit === 'ml' && ingredient.smallUnit === 'ml') convertedQty = qty;
-            if(unit === 'shot') convertedQty = qty * 30; // 1 shot = 30ml approx
+            if(unit === 'shot') convertedQty = qty * 30;
 
             const cost = convertedQty * ingredient.pricePerSmall;
             document.getElementById('compCost' + id).textContent = 'Rp ' + cost.toLocaleString(undefined, {maximumFractionDigits: 0});
@@ -644,7 +677,184 @@
             return total;
         }
 
+        // === EDIT FEATURE ===
+        function editRecipe(id) {
+            const recipe = recipes.find(r => r.id === id);
+            if(!recipe) return;
+
+            editingRecipeId = id;
+
+            // Fill form
+            document.getElementById('menuName').value = recipe.name;
+            document.getElementById('menuCategory').value = recipe.category;
+            document.getElementById('menuPortion').value = recipe.portion;
+            document.getElementById('packagingCost').value = recipe.packaging;
+            document.getElementById('overheadCost').value = recipe.overhead;
+
+            // Clear and rebuild composition rows
+            const container = document.getElementById('recipeComposition');
+            container.innerHTML = '';
+            compRowCount = 0;
+
+            recipe.composition.forEach((comp, idx) => {
+                const rowId = compRowCount++;
+                const div = document.createElement('div');
+                div.className = 'recipe-row';
+                div.id = 'compRow' + rowId;
+                div.innerHTML = `
+                    <select id="compIng${rowId}" onchange="updateCompPrice(${rowId})">
+                        <option value="">Pilih Bahan...</option>
+                    </select>
+                    <input type="number" id="compQty${rowId}" placeholder="Qty" onchange="updateCompPrice(${rowId})">
+                    <select id="compUnit${rowId}">
+                        <option value="gr">gr</option>
+                        <option value="ml">ml</option>
+                        <option value="pcs">pcs</option>
+                        <option value="shot">shot</option>
+                    </select>
+                    <div id="compCost${rowId}" style="color:#2ecc71; font-weight:600;">Rp 0</div>
+                    <button class="btn btn-danger btn-sm" onclick="removeCompRow(${rowId})">✕</button>
+                `;
+                container.appendChild(div);
+
+                // Set values
+                document.getElementById('compIng' + rowId).value = comp.ingredientId;
+                document.getElementById('compQty' + rowId).value = comp.qty;
+                document.getElementById('compUnit' + rowId).value = comp.unit;
+            });
+
+            updateIngredientSelects();
+
+            // Recalculate all costs
+            recipe.composition.forEach((comp, idx) => {
+                updateCompPrice(idx);
+            });
+            calculateRecipeCost();
+
+            // UI changes
+            document.getElementById('recipeFormTitle').textContent = '✏️ Edit Resep';
+            document.getElementById('saveRecipeBtn').textContent = '💾 Update Resep';
+            document.getElementById('editModeBanner').style.display = 'block';
+            document.getElementById('editModeRecipeName').textContent = recipe.name;
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+
+            // Highlight editing item in list
+            renderRecipes();
+
+            // Scroll to form
+            document.getElementById('recipeFormTitle').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            editingRecipeId = null;
+
+            // Reset form
+            document.getElementById('menuName').value = '';
+            document.getElementById('packagingCost').value = '0';
+            document.getElementById('overheadCost').value = '0';
+            document.getElementById('recipeComposition').innerHTML = `
+                <div class="recipe-row" id="compRow0">
+                    <select id="compIng0" onchange="updateCompPrice(0)">
+                        <option value="">Pilih Bahan...</option>
+                    </select>
+                    <input type="number" id="compQty0" placeholder="Qty" onchange="updateCompPrice(0)">
+                    <select id="compUnit0">
+                        <option value="gr">gr</option>
+                        <option value="ml">ml</option>
+                        <option value="pcs">pcs</option>
+                        <option value="shot">shot</option>
+                    </select>
+                    <div id="compCost0" style="color:#2ecc71; font-weight:600;">Rp 0</div>
+                    <button class="btn btn-danger btn-sm" onclick="removeCompRow(0)">✕</button>
+                </div>
+            `;
+            compRowCount = 1;
+            updateIngredientSelects();
+            calculateRecipeCost();
+
+            // UI reset
+            document.getElementById('recipeFormTitle').textContent = 'Buat Resep Menu';
+            document.getElementById('saveRecipeBtn').textContent = '💾 Simpan Resep';
+            document.getElementById('editModeBanner').style.display = 'none';
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+
+            renderRecipes();
+        }
+
+        function updateRecipe() {
+            if(!editingRecipeId) return;
+
+            const name = document.getElementById('menuName').value;
+            const category = document.getElementById('menuCategory').value;
+            const portion = parseInt(document.getElementById('menuPortion').value) || 1;
+
+            if(!name) {
+                alert('Nama menu wajib diisi!');
+                return;
+            }
+
+            const composition = [];
+            document.querySelectorAll('[id^="compIng"]').forEach(select => {
+                const id = select.id.replace('compIng', '');
+                const ingId = select.value;
+                const qty = parseFloat(document.getElementById('compQty' + id)?.value) || 0;
+                const unit = document.getElementById('compUnit' + id)?.value;
+
+                if(!ingId || qty <= 0) return;
+
+                const ingredient = ingredients.find(i => i.id == ingId);
+                if(!ingredient) return;
+
+                let convertedQty = qty;
+                if(unit === 'shot') convertedQty = qty * 30;
+
+                composition.push({
+                    ingredientId: ingId,
+                    ingredientName: ingredient.name,
+                    qty,
+                    unit,
+                    cost: convertedQty * ingredient.pricePerSmall
+                });
+            });
+
+            if(composition.length === 0) {
+                alert('Tambahkan minimal 1 bahan!');
+                return;
+            }
+
+            const packaging = parseFloat(document.getElementById('packagingCost').value) || 0;
+            const overhead = parseFloat(document.getElementById('overheadCost').value) || 0;
+            const hpp = composition.reduce((sum, c) => sum + c.cost, 0) + packaging + overhead;
+
+            const index = recipes.findIndex(r => r.id === editingRecipeId);
+            if(index === -1) return;
+
+            recipes[index] = {
+                id: editingRecipeId,
+                name,
+                category,
+                portion,
+                composition,
+                packaging,
+                overhead,
+                hpp
+            };
+
+            localStorage.setItem('coffeeRecipes', JSON.stringify(recipes));
+
+            cancelEdit();
+            renderRecipes();
+            updateIngredientSelects();
+
+            alert('Resep berhasil diupdate!');
+        }
+
         function saveRecipe() {
+            if(editingRecipeId) {
+                updateRecipe();
+                return;
+            }
+
             const name = document.getElementById('menuName').value;
             const category = document.getElementById('menuCategory').value;
             const portion = parseInt(document.getElementById('menuPortion').value) || 1;
@@ -702,7 +912,6 @@
             renderRecipes();
             updateIngredientSelects();
 
-            // Reset form
             document.getElementById('menuName').value = '';
             document.getElementById('packagingCost').value = '0';
             document.getElementById('overheadCost').value = '0';
@@ -737,22 +946,29 @@
                 return;
             }
 
-            container.innerHTML = recipes.map(r => `
-                <div class="menu-item">
-                    <h4>${r.name} <span style="font-size:0.8em; color:#aaa; font-weight:normal;">(${r.category})</span></h4>
-                    <div class="details">
-                        ${r.composition.map(c => `• ${c.ingredientName}: ${c.qty} ${c.unit} (Rp ${c.cost.toLocaleString(undefined, {maximumFractionDigits: 0})})`).join('<br>')}
-                        ${r.packaging > 0 ? `<br>• Packaging: Rp ${r.packaging.toLocaleString()}` : ''}
-                        ${r.overhead > 0 ? `<br>• Overhead: Rp ${r.overhead.toLocaleString()}` : ''}
+            container.innerHTML = recipes.map(r => {
+                const isEditing = editingRecipeId === r.id;
+                return `
+                    <div class="menu-item ${isEditing ? 'editing' : ''}">
+                        <h4>${r.name} <span style="font-size:0.8em; color:#aaa; font-weight:normal;">(${r.category})</span></h4>
+                        <div class="details">
+                            ${r.composition.map(c => `• ${c.ingredientName}: ${c.qty} ${c.unit} (Rp ${c.cost.toLocaleString(undefined, {maximumFractionDigits: 0})})`).join('<br>')}
+                            ${r.packaging > 0 ? `<br>• Packaging: Rp ${r.packaging.toLocaleString()}` : ''}
+                            ${r.overhead > 0 ? `<br>• Overhead: Rp ${r.overhead.toLocaleString()}` : ''}
+                        </div>
+                        <div class="price-tag">HPP: Rp ${r.hpp.toLocaleString(undefined, {maximumFractionDigits: 0})} / ${r.portion} cup</div>
+                        <div style="margin-top:8px;">
+                            <button class="btn btn-warning btn-sm" style="margin-right:5px;" onclick="editRecipe(${r.id})">✏️ Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteRecipe(${r.id})">🗑️ Hapus</button>
+                        </div>
                     </div>
-                    <div class="price-tag">HPP: Rp ${r.hpp.toLocaleString(undefined, {maximumFractionDigits: 0})} / ${r.portion} cup</div>
-                    <button class="btn btn-danger btn-sm" style="margin-top:8px;" onclick="deleteRecipe(${r.id})">🗑️ Hapus</button>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function deleteRecipe(id) {
             if(confirm('Hapus resep ini?')) {
+                if(editingRecipeId === id) cancelEdit();
                 recipes = recipes.filter(r => r.id !== id);
                 localStorage.setItem('coffeeRecipes', JSON.stringify(recipes));
                 renderRecipes();
@@ -781,7 +997,6 @@
 
             document.getElementById('pricingDetails').style.display = 'block';
 
-            // Breakdown
             let breakdownHTML = '';
             let totalIng = 0;
             recipe.composition.forEach(c => {
@@ -825,7 +1040,6 @@
             document.getElementById('hppBreakdown').innerHTML = breakdownHTML;
             document.getElementById('detailHPP').textContent = 'Rp ' + recipe.hpp.toLocaleString(undefined, {maximumFractionDigits: 0});
 
-            // Reset pricing inputs
             document.getElementById('sellingPrice').value = '';
             document.getElementById('targetMargin').value = '';
             document.getElementById('detailSelling').textContent = 'Rp 0';
@@ -834,7 +1048,6 @@
             document.getElementById('detailBEP').textContent = '0';
             document.getElementById('detailMarkup').textContent = '0x';
 
-            // Recommendations
             const rec70 = Math.ceil(recipe.hpp / 0.3);
             const rec65 = Math.ceil(recipe.hpp / 0.35);
             const rec75 = Math.ceil(recipe.hpp / 0.25);
@@ -873,7 +1086,6 @@
             const margin = ((profit / sellingPrice) * 100);
             const markup = (sellingPrice / recipe.hpp).toFixed(2);
 
-            // BEP per hari (asumsi fixed cost 500rb/hari)
             const bep = Math.ceil(500000 / profit);
 
             document.getElementById('detailSelling').textContent = 'Rp ' + sellingPrice.toLocaleString();
@@ -895,7 +1107,6 @@
             const recipe = recipes.find(r => r.id == recipeId);
             if(!recipe) return;
 
-            // Harga Jual = HPP / (1 - Margin%)
             const sellingPrice = Math.ceil(recipe.hpp / (1 - (targetMargin / 100)));
 
             document.getElementById('sellingPrice').value = sellingPrice;
@@ -904,7 +1115,6 @@
 
         // === LAPORAN ===
         function generateReport() {
-            // Ingredients report
             const ingReport = document.getElementById('reportIngredients');
             if(ingredients.length === 0) {
                 ingReport.innerHTML = '<p style="color:#888;">Tidak ada data bahan</p>';
@@ -924,7 +1134,6 @@
                 ingReport.innerHTML = html;
             }
 
-            // Recipes report
             const recReport = document.getElementById('reportRecipes');
             if(recipes.length === 0) {
                 recReport.innerHTML = '<p style="color:#888;">Tidak ada data resep</p>';
@@ -979,6 +1188,7 @@
                 localStorage.removeItem('coffeeRecipes');
                 ingredients = [];
                 recipes = [];
+                if(editingRecipeId) cancelEdit();
                 renderIngredients();
                 renderRecipes();
                 updateIngredientSelects();
