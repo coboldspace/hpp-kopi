@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator HPP Kopi - Coffee COGS Calculator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #eee; 
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { text-align: center; color: #e94560; margin-bottom: 10px; font-size: 2.2em; }
+        .subtitle { text-align: center; color: #aaa; margin-bottom: 30px; font-size: 0.95em; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .card h2 { color: #e94560; margin-bottom: 15px; font-size: 1.3em; border-bottom: 2px solid #e94560; padding-bottom: 8px; }
+
+        .form-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #ccc; font-size: 0.9em; }
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 0.95em;
+        }
+        input:focus, select:focus { outline: none; border-color: #e94560; }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+        .btn-primary { background: #e94560; color: white; }
+        .btn-primary:hover { background: #c73e54; transform: translateY(-1px); }
+        .btn-success { background: #0f3460; color: white; border: 1px solid #e94560; }
+        .btn-success:hover { background: #1a4a7a; }
+        .btn-warning { background: #f39c12; color: #000; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8em; }
+
+        .ingredient-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        .ingredient-row.header { font-weight: 600; color: #e94560; font-size: 0.85em; }
+
+        .recipe-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+            padding: 8px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+            border: 2px solid #e94560;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .summary-item {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .summary-item .label { font-size: 0.85em; color: #aaa; margin-bottom: 5px; }
+        .summary-item .value { font-size: 1.4em; font-weight: 700; color: #fff; }
+        .summary-item .value.profit { color: #2ecc71; }
+        .summary-item .value.loss { color: #e74c3c; }
+
+        .menu-list { margin-top: 15px; }
+        .menu-item {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #e94560;
+        }
+        .menu-item h4 { color: #fff; margin-bottom: 8px; }
+        .menu-item .details { font-size: 0.9em; color: #bbb; }
+        .menu-item .price-tag {
+            display: inline-block;
+            background: #e94560;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+        .tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #aaa;
+            transition: all 0.3s;
+        }
+        .tab.active { background: #e94560; color: white; }
+        .tab:hover { color: #fff; }
+
+        .hidden { display: none; }
+
+        .export-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            border-radius: 10px;
+        }
+
+        .help-text {
+            font-size: 0.8em;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .total-row {
+            font-weight: 700;
+            color: #e94560;
+            font-size: 1.1em;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div class="container">
+        <h1>☕ Kalkulator HPP Kopi</h1>
+        <p class="subtitle">Hitung Harga Pokok Penjualan (COGS) Menu Kopi dari Bahan Dasar sampai Jadi</p>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('bahan')">📦 Master Bahan</div>
+            <div class="tab" onclick="switchTab('resep')">📝 Resep Menu</div>
+            <div class="tab" onclick="switchTab('hpp')">💰 HPP & Pricing</div>
+            <div class="tab" onclick="switchTab('laporan')">📊 Laporan</div>
+        </div>
+
+        <!-- TAB 1: MASTER BAHAN -->
+        <div id="tab-bahan" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <h2>Tambah Bahan Baku</h2>
+                    <div class="form-group">
+                        <label>Nama Bahan</label>
+                        <input type="text" id="ingName" placeholder="Contoh: Biji Kopi Arabica">
+                    </div>
+                    <div class="form-group">
+                        <label>Satuan Pembelian</label>
+                        <select id="ingUnit">
+                            <option value="kg">Kilogram (kg)</option>
+                            <option value="gram">Gram (g)</option>
+                            <option value="liter">Liter (L)</option>
+                            <option value="ml">Mililiter (ml)</option>
+                            <option value="pcs">Pieces (pcs)</option>
+                            <option value="pack">Pack</option>
+                            <option value="box">Box</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Harga Beli per Satuan (Rp)</label>
+                        <input type="number" id="ingPrice" placeholder="Contoh: 150000">
+                        <div class="help-text">Harga total per satuan pembelian</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Stok/Isi per Satuan</label>
+                        <input type="number" id="ingStock" placeholder="Contoh: 1000" value="1">
+                        <div class="help-text">Jumlah dalam satuan terkecil (mis: 1 kg = 1000 gr)</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Satuan Terkecil</label>
+                        <select id="ingSmallUnit">
+                            <option value="gr">Gram (gr)</option>
+                            <option value="ml">Mililiter (ml)</option>
+                            <option value="pcs">Pcs</option>
+                            <option value="shot">Shot</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="addIngredient()">➕ Tambah Bahan</button>
+                </div>
+
+                <div class="card">
+                    <h2>Daftar Bahan Baku</h2>
+                    <div id="ingredientList">
+                        <div class="ingredient-row header">
+                            <div>Nama Bahan</div>
+                            <div>Satuan</div>
+                            <div>Harga/Satuan</div>
+                            <div>Harga/Terkecil</div>
+                            <div>Aksi</div>
+                        </div>
+                        <div id="ingredientRows"></div>
+                    </div>
+                    <div class="total-row" id="totalInventory">Total Inventory Value: Rp 0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: RESEP MENU -->
+        <div id="tab-resep" class="tab-content hidden">
+            <div class="grid">
+                <div class="card">
+                    <h2>Buat Resep Menu</h2>
+                    <div class="form-group">
+                        <label>Nama Menu</label>
+                        <input type="text" id="menuName" placeholder="Contoh: Espresso Single">
+                    </div>
+                    <div class="form-group">
+                        <label>Kategori</label>
+                        <select id="menuCategory">
+                            <option value="Espresso Based">Espresso Based</option>
+                            <option value="Manual Brew">Manual Brew</option>
+                            <option value="Milk Based">Milk Based</option>
+                            <option value="Signature">Signature/Specialty</option>
+                            <option value="Non-Coffee">Non-Coffee</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Porsi Output (cup)</label>
+                        <input type="number" id="menuPortion" value="1" min="1">
+                    </div>
+
+                    <h3 style="color:#e94560; margin: 15px 0 10px 0; font-size: 1.1em;">Komposisi Bahan:</h3>
+                    <div id="recipeComposition">
+                        <div class="recipe-row" id="compRow0">
+                            <select id="compIng0" onchange="updateCompPrice(0)">
+                                <option value="">Pilih Bahan...</option>
+                            </select>
+                            <input type="number" id="compQty0" placeholder="Qty" onchange="updateCompPrice(0)">
+                            <select id="compUnit0">
+                                <option value="gr">gr</option>
+                                <option value="ml">ml</option>
+                                <option value="pcs">pcs</option>
+                                <option value="shot">shot</option>
+                            </select>
+                            <div id="compCost0" style="color:#2ecc71; font-weight:600;">Rp 0</div>
+                            <button class="btn btn-danger btn-sm" onclick="removeCompRow(0)">✕</button>
+                        </div>
+                    </div>
+                    <button class="btn btn-success" onclick="addCompRow()">➕ Tambah Bahan</button>
+
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
+                        <div class="form-group">
+                            <label>Biaya Packaging per Cup (Rp)</label>
+                            <input type="number" id="packagingCost" value="0" onchange="calculateRecipeCost()">
+                            <div class="help-text">Cup, lid, sedotan, sleeve, sticker, etc.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Biaya Overhead per Cup (Rp)</label>
+                            <input type="number" id="overheadCost" value="0" onchange="calculateRecipeCost()">
+                            <div class="help-text">Gas, listrik, air, sewa per cup</div>
+                        </div>
+                    </div>
+
+                    <div class="summary-box" style="margin-top: 15px;">
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <div class="label">Total Bahan</div>
+                                <div class="value" id="recipeIngCost">Rp 0</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="label">Packaging</div>
+                                <div class="value" id="recipePackCost">Rp 0</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="label">Overhead</div>
+                                <div class="value" id="recipeOverheadCost">Rp 0</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="label">HPP Total</div>
+                                <div class="value" id="recipeTotalHPP" style="color:#e94560; font-size:1.6em;">Rp 0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" style="margin-top: 15px; width:100%;" onclick="saveRecipe()">💾 Simpan Resep</button>
+                </div>
+
+                <div class="card">
+                    <h2>Daftar Resep Tersimpan</h2>
+                    <div id="recipeList" class="menu-list">
+                        <p style="color:#888; text-align:center; padding: 20px;">Belum ada resep tersimpan</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: HPP & PRICING -->
+        <div id="tab-hpp" class="tab-content hidden">
+            <div class="grid">
+                <div class="card">
+                    <h2>Analisis HPP & Pricing</h2>
+                    <div class="form-group">
+                        <label>Pilih Menu</label>
+                        <select id="pricingMenuSelect" onchange="loadPricingAnalysis()">
+                            <option value="">Pilih Menu...</option>
+                        </select>
+                    </div>
+
+                    <div id="pricingDetails" style="display:none;">
+                        <div class="summary-box">
+                            <h3 style="color:#fff; margin-bottom:15px;">Breakdown HPP</h3>
+                            <div id="hppBreakdown"></div>
+                        </div>
+
+                        <div style="margin-top: 20px;">
+                            <div class="form-group">
+                                <label>Harga Jual (Rp)</label>
+                                <input type="number" id="sellingPrice" placeholder="Contoh: 25000" oninput="calculateMargin()">
+                            </div>
+                            <div class="form-group">
+                                <label>Target Margin (%)</label>
+                                <input type="number" id="targetMargin" placeholder="Contoh: 70" oninput="calculateFromMargin()">
+                                <div class="help-text">Akan otomatis hitung harga jual ideal</div>
+                            </div>
+                        </div>
+
+                        <div class="summary-box" style="margin-top: 15px;">
+                            <div class="summary-grid">
+                                <div class="summary-item">
+                                    <div class="label">HPP per Cup</div>
+                                    <div class="value" id="detailHPP">Rp 0</div>
+                                </div>
+                                <div class="summary-item">
+                                    <div class="label">Harga Jual</div>
+                                    <div class="value" id="detailSelling">Rp 0</div>
+                                </div>
+                                <div class="summary-item">
+                                    <div class="label">Profit per Cup</div>
+                                    <div class="value profit" id="detailProfit">Rp 0</div>
+                                </div>
+                                <div class="summary-item">
+                                    <div class="label">Margin</div>
+                                    <div class="value profit" id="detailMargin">0%</div>
+                                </div>
+                                <div class="summary-item">
+                                    <div class="label">Break Even (cup/hari)</div>
+                                    <div class="value" id="detailBEP">0</div>
+                                </div>
+                                <div class="summary-item">
+                                    <div class="label">Markup</div>
+                                    <div class="value" id="detailMarkup">0x</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="export-section">
+                            <h4 style="margin-bottom:10px; color:#2ecc71;">📋 Rekomendasi Pricing</h4>
+                            <div id="pricingRecommendation"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Benchmark HPP Kopi</h2>
+                    <div style="font-size: 0.9em; color: #ccc; line-height: 1.6;">
+                        <p style="margin-bottom: 10px;"><strong>Standar Industri F&B:</strong></p>
+                        <ul style="margin-left: 20px; margin-bottom: 15px;">
+                            <li>Food Cost Ratio ideal: 25-35%</li>
+                            <li>Margin ideal: 65-75%</li>
+                            <li>Packaging: 5-10% dari HPP</li>
+                            <li>Overhead: 10-15% dari HPP</li>
+                        </ul>
+
+                        <p style="margin-bottom: 10px;"><strong>Komposisi HPP Kopi:</strong></p>
+                        <ul style="margin-left: 20px; margin-bottom: 15px;">
+                            <li>Biji Kopi: 30-40%</li>
+                            <li>Susu/Sirup: 20-30%</li>
+                            <li>Packaging: 15-20%</li>
+                            <li>Overhead: 10-15%</li>
+                        </ul>
+
+                        <div style="background: rgba(233, 69, 96, 0.1); padding: 15px; border-radius: 10px; border-left: 4px solid #e94560;">
+                            <strong style="color:#e94560;">Tips:</strong>
+                            <p style="margin-top:8px; font-size:0.9em;">Jika margin < 50%, pertimbangkan untuk naikin harga atau turunin biaya bahan. Kalau margin > 80%, cek kembali apakah harga jual terlalu tinggi untuk pasar target.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: LAPORAN -->
+        <div id="tab-laporan" class="tab-content hidden">
+            <div class="card" style="margin-bottom: 20px;">
+                <h2>📊 Laporan HPP & Menu</h2>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn btn-success" onclick="exportToCSV()">📥 Export CSV (Excel)</button>
+                    <button class="btn btn-warning" onclick="window.print()">🖨️ Print Laporan</button>
+                    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Reset Semua Data</button>
+                </div>
+
+                <div id="reportContent">
+                    <h3 style="color:#e94560; margin: 20px 0 10px 0;">Ringkasan Bahan Baku</h3>
+                    <div id="reportIngredients"></div>
+
+                    <h3 style="color:#e94560; margin: 20px 0 10px 0;">Ringkasan Menu & HPP</h3>
+                    <div id="reportRecipes"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Storage
+        let ingredients = JSON.parse(localStorage.getItem('coffeeIngredients')) || [];
+        let recipes = JSON.parse(localStorage.getItem('coffeeRecipes')) || [];
+        let compRowCount = 1;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderIngredients();
+            renderRecipes();
+            updateIngredientSelects();
+        });
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            event.target.classList.add('active');
+
+            if(tabName === 'hpp') updatePricingMenuSelect();
+            if(tabName === 'laporan') generateReport();
+        }
+
+        // === MASTER BAHAN ===
+        function addIngredient() {
+            const name = document.getElementById('ingName').value;
+            const unit = document.getElementById('ingUnit').value;
+            const price = parseFloat(document.getElementById('ingPrice').value) || 0;
+            const stock = parseFloat(document.getElementById('ingStock').value) || 1;
+            const smallUnit = document.getElementById('ingSmallUnit').value;
+
+            if(!name || price <= 0) {
+                alert('Nama bahan dan harga wajib diisi!');
+                return;
+            }
+
+            const pricePerSmall = price / stock;
+
+            ingredients.push({
+                id: Date.now(),
+                name,
+                unit,
+                price,
+                stock,
+                smallUnit,
+                pricePerSmall
+            });
+
+            localStorage.setItem('coffeeIngredients', JSON.stringify(ingredients));
+            renderIngredients();
+            updateIngredientSelects();
+
+            // Clear form
+            document.getElementById('ingName').value = '';
+            document.getElementById('ingPrice').value = '';
+            document.getElementById('ingStock').value = '1';
+        }
+
+        function renderIngredients() {
+            const container = document.getElementById('ingredientRows');
+            let total = 0;
+
+            container.innerHTML = ingredients.map(ing => {
+                total += ing.price;
+                return `
+                    <div class="ingredient-row">
+                        <div>${ing.name}</div>
+                        <div>${ing.unit}</div>
+                        <div>Rp ${ing.price.toLocaleString()}</div>
+                        <div>Rp ${ing.pricePerSmall.toFixed(2)}/${ing.smallUnit}</div>
+                        <div><button class="btn btn-danger btn-sm" onclick="deleteIngredient(${ing.id})">🗑️</button></div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('totalInventory').textContent = `Total Inventory Value: Rp ${total.toLocaleString()}`;
+        }
+
+        function deleteIngredient(id) {
+            if(confirm('Hapus bahan ini? Semua resep yang pakai bahan ini akan error!')) {
+                ingredients = ingredients.filter(i => i.id !== id);
+                localStorage.setItem('coffeeIngredients', JSON.stringify(ingredients));
+                renderIngredients();
+                updateIngredientSelects();
+            }
+        }
+
+        function updateIngredientSelects() {
+            const selects = document.querySelectorAll('[id^="compIng"]');
+            const options = ingredients.map(ing => 
+                `<option value="${ing.id}">${ing.name} (Rp ${ing.pricePerSmall.toFixed(0)}/${ing.smallUnit})</option>`
+            ).join('');
+
+            selects.forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">Pilih Bahan...</option>' + options;
+                select.value = currentVal;
+            });
+
+            // Update pricing tab select
+            const pricingSelect = document.getElementById('pricingMenuSelect');
+            if(pricingSelect) {
+                const recipeOptions = recipes.map(r => 
+                    `<option value="${r.id}">${r.name} (${r.category})</option>`
+                ).join('');
+                pricingSelect.innerHTML = '<option value="">Pilih Menu...</option>' + recipeOptions;
+            }
+        }
+
+        // === RESEP ===
+        function addCompRow() {
+            const container = document.getElementById('recipeComposition');
+            const id = compRowCount++;
+
+            const div = document.createElement('div');
+            div.className = 'recipe-row';
+            div.id = 'compRow' + id;
+            div.innerHTML = `
+                <select id="compIng${id}" onchange="updateCompPrice(${id})">
+                    <option value="">Pilih Bahan...</option>
+                </select>
+                <input type="number" id="compQty${id}" placeholder="Qty" onchange="updateCompPrice(${id})">
+                <select id="compUnit${id}">
+                    <option value="gr">gr</option>
+                    <option value="ml">ml</option>
+                    <option value="pcs">pcs</option>
+                    <option value="shot">shot</option>
+                </select>
+                <div id="compCost${id}" style="color:#2ecc71; font-weight:600;">Rp 0</div>
+                <button class="btn btn-danger btn-sm" onclick="removeCompRow(${id})">✕</button>
+            `;
+
+            container.appendChild(div);
+            updateIngredientSelects();
+        }
+
+        function removeCompRow(id) {
+            const row = document.getElementById('compRow' + id);
+            if(row) row.remove();
+            calculateRecipeCost();
+        }
+
+        function updateCompPrice(id) {
+            const ingId = document.getElementById('compIng' + id)?.value;
+            const qty = parseFloat(document.getElementById('compQty' + id)?.value) || 0;
+            const unit = document.getElementById('compUnit' + id)?.value;
+
+            if(!ingId || qty <= 0) {
+                const costEl = document.getElementById('compCost' + id);
+                if(costEl) costEl.textContent = 'Rp 0';
+                calculateRecipeCost();
+                return;
+            }
+
+            const ingredient = ingredients.find(i => i.id == ingId);
+            if(!ingredient) return;
+
+            // Convert qty to small unit if needed
+            let convertedQty = qty;
+            if(unit === 'gr' && ingredient.smallUnit === 'gr') convertedQty = qty;
+            if(unit === 'ml' && ingredient.smallUnit === 'ml') convertedQty = qty;
+            if(unit === 'shot') convertedQty = qty * 30; // 1 shot = 30ml approx
+
+            const cost = convertedQty * ingredient.pricePerSmall;
+            document.getElementById('compCost' + id).textContent = 'Rp ' + cost.toLocaleString(undefined, {maximumFractionDigits: 0});
+
+            calculateRecipeCost();
+        }
+
+        function calculateRecipeCost() {
+            let totalIng = 0;
+
+            document.querySelectorAll('[id^="compIng"]').forEach((select, idx) => {
+                const id = select.id.replace('compIng', '');
+                const ingId = select.value;
+                const qty = parseFloat(document.getElementById('compQty' + id)?.value) || 0;
+                const unit = document.getElementById('compUnit' + id)?.value;
+
+                if(!ingId || qty <= 0) return;
+
+                const ingredient = ingredients.find(i => i.id == ingId);
+                if(!ingredient) return;
+
+                let convertedQty = qty;
+                if(unit === 'shot') convertedQty = qty * 30;
+
+                totalIng += convertedQty * ingredient.pricePerSmall;
+            });
+
+            const packaging = parseFloat(document.getElementById('packagingCost').value) || 0;
+            const overhead = parseFloat(document.getElementById('overheadCost').value) || 0;
+            const total = totalIng + packaging + overhead;
+
+            document.getElementById('recipeIngCost').textContent = 'Rp ' + totalIng.toLocaleString(undefined, {maximumFractionDigits: 0});
+            document.getElementById('recipePackCost').textContent = 'Rp ' + packaging.toLocaleString();
+            document.getElementById('recipeOverheadCost').textContent = 'Rp ' + overhead.toLocaleString();
+            document.getElementById('recipeTotalHPP').textContent = 'Rp ' + total.toLocaleString(undefined, {maximumFractionDigits: 0});
+
+            return total;
+        }
+
+        function saveRecipe() {
+            const name = document.getElementById('menuName').value;
+            const category = document.getElementById('menuCategory').value;
+            const portion = parseInt(document.getElementById('menuPortion').value) || 1;
+
+            if(!name) {
+                alert('Nama menu wajib diisi!');
+                return;
+            }
+
+            const composition = [];
+            document.querySelectorAll('[id^="compIng"]').forEach(select => {
+                const id = select.id.replace('compIng', '');
+                const ingId = select.value;
+                const qty = parseFloat(document.getElementById('compQty' + id)?.value) || 0;
+                const unit = document.getElementById('compUnit' + id)?.value;
+
+                if(!ingId || qty <= 0) return;
+
+                const ingredient = ingredients.find(i => i.id == ingId);
+                if(!ingredient) return;
+
+                let convertedQty = qty;
+                if(unit === 'shot') convertedQty = qty * 30;
+
+                composition.push({
+                    ingredientId: ingId,
+                    ingredientName: ingredient.name,
+                    qty,
+                    unit,
+                    cost: convertedQty * ingredient.pricePerSmall
+                });
+            });
+
+            if(composition.length === 0) {
+                alert('Tambahkan minimal 1 bahan!');
+                return;
+            }
+
+            const packaging = parseFloat(document.getElementById('packagingCost').value) || 0;
+            const overhead = parseFloat(document.getElementById('overheadCost').value) || 0;
+            const hpp = composition.reduce((sum, c) => sum + c.cost, 0) + packaging + overhead;
+
+            recipes.push({
+                id: Date.now(),
+                name,
+                category,
+                portion,
+                composition,
+                packaging,
+                overhead,
+                hpp
+            });
+
+            localStorage.setItem('coffeeRecipes', JSON.stringify(recipes));
+            renderRecipes();
+            updateIngredientSelects();
+
+            // Reset form
+            document.getElementById('menuName').value = '';
+            document.getElementById('packagingCost').value = '0';
+            document.getElementById('overheadCost').value = '0';
+            document.getElementById('recipeComposition').innerHTML = `
+                <div class="recipe-row" id="compRow0">
+                    <select id="compIng0" onchange="updateCompPrice(0)">
+                        <option value="">Pilih Bahan...</option>
+                    </select>
+                    <input type="number" id="compQty0" placeholder="Qty" onchange="updateCompPrice(0)">
+                    <select id="compUnit0">
+                        <option value="gr">gr</option>
+                        <option value="ml">ml</option>
+                        <option value="pcs">pcs</option>
+                        <option value="shot">shot</option>
+                    </select>
+                    <div id="compCost0" style="color:#2ecc71; font-weight:600;">Rp 0</div>
+                    <button class="btn btn-danger btn-sm" onclick="removeCompRow(0)">✕</button>
+                </div>
+            `;
+            compRowCount = 1;
+            updateIngredientSelects();
+            calculateRecipeCost();
+
+            alert('Resep berhasil disimpan!');
+        }
+
+        function renderRecipes() {
+            const container = document.getElementById('recipeList');
+
+            if(recipes.length === 0) {
+                container.innerHTML = '<p style="color:#888; text-align:center; padding: 20px;">Belum ada resep tersimpan</p>';
+                return;
+            }
+
+            container.innerHTML = recipes.map(r => `
+                <div class="menu-item">
+                    <h4>${r.name} <span style="font-size:0.8em; color:#aaa; font-weight:normal;">(${r.category})</span></h4>
+                    <div class="details">
+                        ${r.composition.map(c => `• ${c.ingredientName}: ${c.qty} ${c.unit} (Rp ${c.cost.toLocaleString(undefined, {maximumFractionDigits: 0})})`).join('<br>')}
+                        ${r.packaging > 0 ? `<br>• Packaging: Rp ${r.packaging.toLocaleString()}` : ''}
+                        ${r.overhead > 0 ? `<br>• Overhead: Rp ${r.overhead.toLocaleString()}` : ''}
+                    </div>
+                    <div class="price-tag">HPP: Rp ${r.hpp.toLocaleString(undefined, {maximumFractionDigits: 0})} / ${r.portion} cup</div>
+                    <button class="btn btn-danger btn-sm" style="margin-top:8px;" onclick="deleteRecipe(${r.id})">🗑️ Hapus</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteRecipe(id) {
+            if(confirm('Hapus resep ini?')) {
+                recipes = recipes.filter(r => r.id !== id);
+                localStorage.setItem('coffeeRecipes', JSON.stringify(recipes));
+                renderRecipes();
+                updateIngredientSelects();
+            }
+        }
+
+        // === PRICING ===
+        function updatePricingMenuSelect() {
+            const select = document.getElementById('pricingMenuSelect');
+            const options = recipes.map(r => 
+                `<option value="${r.id}">${r.name} - HPP: Rp ${r.hpp.toLocaleString(undefined, {maximumFractionDigits: 0})}</option>`
+            ).join('');
+            select.innerHTML = '<option value="">Pilih Menu...</option>' + options;
+        }
+
+        function loadPricingAnalysis() {
+            const recipeId = document.getElementById('pricingMenuSelect').value;
+            if(!recipeId) {
+                document.getElementById('pricingDetails').style.display = 'none';
+                return;
+            }
+
+            const recipe = recipes.find(r => r.id == recipeId);
+            if(!recipe) return;
+
+            document.getElementById('pricingDetails').style.display = 'block';
+
+            // Breakdown
+            let breakdownHTML = '';
+            let totalIng = 0;
+            recipe.composition.forEach(c => {
+                totalIng += c.cost;
+                const pct = ((c.cost / recipe.hpp) * 100).toFixed(1);
+                breakdownHTML += `
+                    <div style="display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <span>${c.ingredientName} (${c.qty} ${c.unit})</span>
+                        <span style="color:#2ecc71;">Rp ${c.cost.toLocaleString(undefined, {maximumFractionDigits: 0})} <span style="color:#888; font-size:0.85em;">(${pct}%)</span></span>
+                    </div>
+                `;
+            });
+
+            if(recipe.packaging > 0) {
+                const pct = ((recipe.packaging / recipe.hpp) * 100).toFixed(1);
+                breakdownHTML += `
+                    <div style="display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <span>Packaging</span>
+                        <span style="color:#f39c12;">Rp ${recipe.packaging.toLocaleString()} <span style="color:#888; font-size:0.85em;">(${pct}%)</span></span>
+                    </div>
+                `;
+            }
+
+            if(recipe.overhead > 0) {
+                const pct = ((recipe.overhead / recipe.hpp) * 100).toFixed(1);
+                breakdownHTML += `
+                    <div style="display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <span>Overhead</span>
+                        <span style="color:#e74c3c;">Rp ${recipe.overhead.toLocaleString()} <span style="color:#888; font-size:0.85em;">(${pct}%)</span></span>
+                    </div>
+                `;
+            }
+
+            breakdownHTML += `
+                <div style="display:flex; justify-content:space-between; padding: 12px 0; margin-top: 5px; font-weight:700; color:#e94560; font-size:1.1em;">
+                    <span>TOTAL HPP</span>
+                    <span>Rp ${recipe.hpp.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                </div>
+            `;
+
+            document.getElementById('hppBreakdown').innerHTML = breakdownHTML;
+            document.getElementById('detailHPP').textContent = 'Rp ' + recipe.hpp.toLocaleString(undefined, {maximumFractionDigits: 0});
+
+            // Reset pricing inputs
+            document.getElementById('sellingPrice').value = '';
+            document.getElementById('targetMargin').value = '';
+            document.getElementById('detailSelling').textContent = 'Rp 0';
+            document.getElementById('detailProfit').textContent = 'Rp 0';
+            document.getElementById('detailMargin').textContent = '0%';
+            document.getElementById('detailBEP').textContent = '0';
+            document.getElementById('detailMarkup').textContent = '0x';
+
+            // Recommendations
+            const rec70 = Math.ceil(recipe.hpp / 0.3);
+            const rec65 = Math.ceil(recipe.hpp / 0.35);
+            const rec75 = Math.ceil(recipe.hpp / 0.25);
+
+            document.getElementById('pricingRecommendation').innerHTML = `
+                <table style="width:100%; font-size:0.9em;">
+                    <tr style="color:#aaa;">
+                        <td style="padding:6px;">Target Margin 65%</td>
+                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec65.toLocaleString()}</td>
+                        <td style="padding:6px; text-align:right; color:#2ecc71;">Profit: Rp ${(rec65 - recipe.hpp).toLocaleString()}</td>
+                    </tr>
+                    <tr style="color:#aaa;">
+                        <td style="padding:6px;">Target Margin 70%</td>
+                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec70.toLocaleString()}</td>
+                        <td style="padding:6px; text-align:right; color:#2ecc71;">Profit: Rp ${(rec70 - recipe.hpp).toLocaleString()}</td>
+                    </tr>
+                    <tr style="color:#aaa;">
+                        <td style="padding:6px;">Target Margin 75%</td>
+                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec75.toLocaleString()}</td>
+                        <td style="padding:6px; text-align:right; color:#2ecc71;">Profit: Rp ${(rec75 - recipe.hpp).toLocaleString()}</td>
+                    </tr>
+                </table>
+            `;
+        }
+
+        function calculateMargin() {
+            const recipeId = document.getElementById('pricingMenuSelect').value;
+            const sellingPrice = parseFloat(document.getElementById('sellingPrice').value) || 0;
+
+            if(!recipeId || sellingPrice <= 0) return;
+
+            const recipe = recipes.find(r => r.id == recipeId);
+            if(!recipe) return;
+
+            const profit = sellingPrice - recipe.hpp;
+            const margin = ((profit / sellingPrice) * 100);
+            const markup = (sellingPrice / recipe.hpp).toFixed(2);
+
+            // BEP per hari (asumsi fixed cost 500rb/hari)
+            const bep = Math.ceil(500000 / profit);
+
+            document.getElementById('detailSelling').textContent = 'Rp ' + sellingPrice.toLocaleString();
+            document.getElementById('detailProfit').textContent = 'Rp ' + profit.toLocaleString();
+            document.getElementById('detailMargin').textContent = margin.toFixed(1) + '%';
+            document.getElementById('detailMargin').className = 'value ' + (margin >= 50 ? 'profit' : 'loss');
+            document.getElementById('detailBEP').textContent = bep > 0 && bep < 99999 ? bep + ' cup' : 'N/A';
+            document.getElementById('detailMarkup').textContent = markup + 'x';
+
+            document.getElementById('targetMargin').value = margin.toFixed(1);
+        }
+
+        function calculateFromMargin() {
+            const recipeId = document.getElementById('pricingMenuSelect').value;
+            const targetMargin = parseFloat(document.getElementById('targetMargin').value) || 0;
+
+            if(!recipeId || targetMargin <= 0 || targetMargin >= 100) return;
+
+            const recipe = recipes.find(r => r.id == recipeId);
+            if(!recipe) return;
+
+            // Harga Jual = HPP / (1 - Margin%)
+            const sellingPrice = Math.ceil(recipe.hpp / (1 - (targetMargin / 100)));
+
+            document.getElementById('sellingPrice').value = sellingPrice;
+            calculateMargin();
+        }
+
+        // === LAPORAN ===
+        function generateReport() {
+            // Ingredients report
+            const ingReport = document.getElementById('reportIngredients');
+            if(ingredients.length === 0) {
+                ingReport.innerHTML = '<p style="color:#888;">Tidak ada data bahan</p>';
+            } else {
+                let html = '<table style="width:100%; border-collapse:collapse; font-size:0.9em;">';
+                html += '<tr style="background:#e94560; color:white;"><th style="padding:10px; text-align:left;">Nama Bahan</th><th>Satuan</th><th>Harga Beli</th><th>Isi</th><th>Harga Terkecil</th></tr>';
+                ingredients.forEach((ing, idx) => {
+                    html += `<tr style="background:${idx%2===0?'rgba(255,255,255,0.03)':'transparent'}">
+                        <td style="padding:8px;">${ing.name}</td>
+                        <td style="padding:8px; text-align:center;">${ing.unit}</td>
+                        <td style="padding:8px; text-align:right;">Rp ${ing.price.toLocaleString()}</td>
+                        <td style="padding:8px; text-align:center;">${ing.stock} ${ing.smallUnit}</td>
+                        <td style="padding:8px; text-align:right;">Rp ${ing.pricePerSmall.toFixed(2)}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                ingReport.innerHTML = html;
+            }
+
+            // Recipes report
+            const recReport = document.getElementById('reportRecipes');
+            if(recipes.length === 0) {
+                recReport.innerHTML = '<p style="color:#888;">Tidak ada data resep</p>';
+            } else {
+                let html = '<table style="width:100%; border-collapse:collapse; font-size:0.9em;">';
+                html += '<tr style="background:#e94560; color:white;"><th style="padding:10px; text-align:left;">Menu</th><th>Kategori</th><th>HPP</th><th>Detail Bahan</th></tr>';
+                recipes.forEach((r, idx) => {
+                    const detail = r.composition.map(c => `${c.ingredientName} ${c.qty}${c.unit}`).join(', ');
+                    html += `<tr style="background:${idx%2===0?'rgba(255,255,255,0.03)':'transparent'}">
+                        <td style="padding:8px;"><strong>${r.name}</strong></td>
+                        <td style="padding:8px; text-align:center;">${r.category}</td>
+                        <td style="padding:8px; text-align:right; color:#e94560; font-weight:600;">Rp ${r.hpp.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                        <td style="padding:8px; font-size:0.85em; color:#aaa;">${detail}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                recReport.innerHTML = html;
+            }
+        }
+
+        function exportToCSV() {
+            let csv = 'DATA BAHAN BAKU\n';
+            csv += 'Nama Bahan,Satuan Pembelian,Harga Beli,Isi per Satuan,Satuan Terkecil,Harga per Satuan Terkecil\n';
+            ingredients.forEach(ing => {
+                csv += `"${ing.name}","${ing.unit}",${ing.price},${ing.stock},"${ing.smallUnit}",${ing.pricePerSmall.toFixed(2)}\n`;
+            });
+
+            csv += '\\nDATA RESEP MENU\n';
+            csv += 'Nama Menu,Kategori,Porsi (cup),HPP per Cup,Detail Komposisi,Packaging,Overhead\n';
+            recipes.forEach(r => {
+                const comp = r.composition.map(c => `${c.ingredientName}:${c.qty}${c.unit}`).join('; ');
+                csv += `"${r.name}","${r.category}",${r.portion},${r.hpp.toFixed(2)},"${comp}",${r.packaging},${r.overhead}\n`;
+            });
+
+            csv += '\\nANALISIS HPP PER MENU\n';
+            csv += 'Nama Menu,HPP,Harga Jual (asumsi 70% margin),Profit per Cup\n';
+            recipes.forEach(r => {
+                const price70 = Math.ceil(r.hpp / 0.3);
+                csv += `"${r.name}",${r.hpp.toFixed(2)},${price70},${(price70 - r.hpp).toFixed(2)}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'HPP_Kopi_Report_' + new Date().toISOString().split('T')[0] + '.csv';
+            link.click();
+        }
+
+        function clearAllData() {
+            if(confirm('Yakin mau hapus SEMUA data? Ini gak bisa di-undo!')) {
+                localStorage.removeItem('coffeeIngredients');
+                localStorage.removeItem('coffeeRecipes');
+                ingredients = [];
+                recipes = [];
+                renderIngredients();
+                renderRecipes();
+                updateIngredientSelects();
+                alert('Semua data telah dihapus!');
+            }
+        }
+    </script>
+</body>
+</html>
