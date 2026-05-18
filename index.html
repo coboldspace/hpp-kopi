@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator HPP Kopi - Coffee COGS Calculator</title>
+    <title>Kalkulator HPP Kopi + POS Inventory</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -18,6 +18,8 @@
         .subtitle { text-align: center; color: #aaa; margin-bottom: 30px; font-size: 0.95em; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
 
         .card {
             background: rgba(255,255,255,0.05);
@@ -60,11 +62,14 @@
         .btn-danger:hover { background: #c0392b; }
         .btn-secondary { background: #7f8c8d; color: white; }
         .btn-secondary:hover { background: #95a5a6; }
+        .btn-info { background: #3498db; color: white; }
+        .btn-info:hover { background: #2980b9; }
         .btn-sm { padding: 6px 12px; font-size: 0.8em; }
+        .btn-lg { padding: 14px 24px; font-size: 1.1em; }
 
         .ingredient-row {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr 0.5fr;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 0.5fr;
             gap: 8px;
             margin-bottom: 8px;
             align-items: center;
@@ -136,6 +141,7 @@
             margin-bottom: 20px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
             padding-bottom: 10px;
+            flex-wrap: wrap;
         }
         .tab {
             padding: 8px 16px;
@@ -192,18 +198,139 @@
         .btn-group .btn {
             flex: 1;
         }
+
+        /* POS Styles */
+        .pos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .pos-card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .pos-card:hover {
+            border-color: #e94560;
+            transform: translateY(-3px);
+            background: rgba(233, 69, 96, 0.1);
+        }
+        .pos-card .pos-name { font-weight: 700; color: #fff; margin-bottom: 5px; }
+        .pos-card .pos-cat { font-size: 0.8em; color: #aaa; margin-bottom: 8px; }
+        .pos-card .pos-hpp { font-size: 0.85em; color: #e94560; margin-bottom: 8px; }
+        .pos-card .pos-price { font-size: 1.2em; font-weight: 700; color: #2ecc71; }
+        .pos-card .pos-stock { font-size: 0.75em; color: #f39c12; margin-top: 5px; }
+        .pos-card.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .cart-total {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #2ecc71;
+            text-align: right;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .stock-low { color: #e74c3c; font-weight: 700; }
+        .stock-med { color: #f39c12; }
+        .stock-ok { color: #2ecc71; }
+
+        .alert-box {
+            background: rgba(231, 76, 60, 0.15);
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+
+        .transaction-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 0.5fr;
+            gap: 10px;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.9em;
+            align-items: center;
+        }
+        .transaction-row.header {
+            font-weight: 600;
+            color: #e94560;
+            border-bottom: 2px solid #e94560;
+        }
+
+        .inventory-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+            gap: 8px;
+            padding: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            align-items: center;
+            font-size: 0.9em;
+        }
+        .inventory-row.header {
+            font-weight: 600;
+            color: #e94560;
+            border-bottom: 2px solid #e94560;
+        }
+
+        .qty-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: #e94560;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .receipt {
+            background: white;
+            color: #333;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+        .receipt h3 { text-align: center; margin-bottom: 15px; color: #333; }
+        .receipt .line { border-top: 1px dashed #999; margin: 10px 0; }
     </style>
 <base target="_blank">
 </head>
 <body>
     <div class="container">
-        <h1>☕ Kalkulator HPP Kopi</h1>
-        <p class="subtitle">Hitung Harga Pokok Penjualan (COGS) Menu Kopi dari Bahan Dasar sampai Jadi</p>
+        <h1>☕ Kalkulator HPP Kopi + POS</h1>
+        <p class="subtitle">Hitung HPP, Pricing, Inventory Tracking & POS Simulation</p>
 
         <div class="tabs">
             <div class="tab active" onclick="switchTab('bahan')">📦 Master Bahan</div>
             <div class="tab" onclick="switchTab('resep')">📝 Resep Menu</div>
             <div class="tab" onclick="switchTab('hpp')">💰 HPP & Pricing</div>
+            <div class="tab" onclick="switchTab('pos')">🛒 POS / Kasir</div>
+            <div class="tab" onclick="switchTab('inventory')">📦 Inventory</div>
             <div class="tab" onclick="switchTab('laporan')">📊 Laporan</div>
         </div>
 
@@ -234,9 +361,9 @@
                         <div class="help-text">Harga total per satuan pembelian</div>
                     </div>
                     <div class="form-group">
-                        <label>Stok/Isi per Satuan</label>
-                        <input type="number" id="ingStock" placeholder="Contoh: 1000" value="1">
-                        <div class="help-text">Jumlah dalam satuan terkecil (mis: 1 kg = 1000 gr)</div>
+                        <label>Stok Awal (dalam satuan terkecil)</label>
+                        <input type="number" id="ingStock" placeholder="Contoh: 1000" value="1000">
+                        <div class="help-text">Jumlah stok yang tersedia sekarang</div>
                     </div>
                     <div class="form-group">
                         <label>Satuan Terkecil</label>
@@ -247,16 +374,22 @@
                             <option value="shot">Shot</option>
                         </select>
                     </div>
+                    <div class="form-group">
+                        <label>Minimum Stok (Alert)</label>
+                        <input type="number" id="ingMinStock" placeholder="Contoh: 200" value="200">
+                        <div class="help-text">Batas stok rendah untuk peringatan</div>
+                    </div>
                     <button class="btn btn-primary" onclick="addIngredient()">➕ Tambah Bahan</button>
                 </div>
 
                 <div class="card">
-                    <h2>Daftar Bahan Baku</h2>
+                    <h2>Daftar Bahan Baku & Stok</h2>
                     <div id="ingredientList">
                         <div class="ingredient-row header">
                             <div>Nama Bahan</div>
                             <div>Satuan</div>
                             <div>Harga/Satuan</div>
+                            <div>Stok</div>
                             <div>Harga/Terkecil</div>
                             <div>Aksi</div>
                         </div>
@@ -440,12 +573,11 @@
                             <li>Overhead: 10-15% dari HPP</li>
                         </ul>
 
-                        <p style="margin-bottom: 10px;"><strong>Komposisi HPP Kopi:</strong></p>
+                        <p style="margin-bottom: 10px;"><strong>Margin di Bawah 50%:</strong></p>
                         <ul style="margin-left: 20px; margin-bottom: 15px;">
-                            <li>Biji Kopi: 30-40%</li>
-                            <li>Susu/Sirup: 20-30%</li>
-                            <li>Packaging: 15-20%</li>
-                            <li>Overhead: 10-15%</li>
+                            <li>40-50%: Masih acceptable untuk promo / bundling</li>
+                            <li>30-40%: Hati-hati, cek apakah volume tinggi</li>
+                            <li>&lt;30%: Hampir pasti merugi, evaluasi ulang</li>
                         </ul>
 
                         <div style="background: rgba(233, 69, 96, 0.1); padding: 15px; border-radius: 10px; border-left: 4px solid #e94560;">
@@ -457,7 +589,124 @@
             </div>
         </div>
 
-        <!-- TAB 4: LAPORAN -->
+        <!-- TAB 4: POS / KASIR -->
+        <div id="tab-pos" class="tab-content hidden">
+            <div class="grid">
+                <div class="card">
+                    <h2>🛒 Point of Sale (POS)</h2>
+                    <div id="posAlerts"></div>
+                    <div class="form-group">
+                        <label>Pilih Menu</label>
+                        <select id="posMenuSelect" onchange="updatePosDetails()">
+                            <option value="">Pilih Menu...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Qty (Cup)</label>
+                        <input type="number" id="posQty" value="1" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Harga Jual per Cup (Rp)</label>
+                        <input type="number" id="posSellingPrice" placeholder="Harga jual">
+                    </div>
+                    <div class="form-group">
+                        <label>Catatan (opsional)</label>
+                        <input type="text" id="posNote" placeholder="Contoh: Less sugar, extra shot">
+                    </div>
+
+                    <div id="posStockCheck" style="margin: 15px 0; font-size: 0.9em;"></div>
+
+                    <button class="btn btn-primary btn-lg" style="width:100%; margin-top: 10px;" onclick="processSale()">✅ PROSES PENJUALAN</button>
+
+                    <div class="summary-box" style="margin-top: 20px;">
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <div class="label">HPP Total</div>
+                                <div class="value" id="posTotalHPP">Rp 0</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="label">Revenue</div>
+                                <div class="value" id="posRevenue">Rp 0</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="label">Profit</div>
+                                <div class="value profit" id="posProfit">Rp 0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>📋 Daftar Menu (Quick Select)</h2>
+                    <div id="posMenuGrid" class="pos-grid">
+                        <p style="color:#888; text-align:center; grid-column: 1/-1;">Belum ada menu tersimpan</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <h2>🧾 Transaksi Hari Ini</h2>
+                <div id="transactionList">
+                    <div class="transaction-row header">
+                        <div>Waktu</div>
+                        <div>Menu</div>
+                        <div>Qty</div>
+                        <div>Total</div>
+                        <div>Aksi</div>
+                    </div>
+                    <div id="transactionRows"></div>
+                </div>
+                <div class="cart-total" id="todayRevenue">Total Revenue Hari Ini: Rp 0</div>
+            </div>
+        </div>
+
+        <!-- TAB 5: INVENTORY -->
+        <div id="tab-inventory" class="tab-content hidden">
+            <div class="card">
+                <h2>📦 Inventory / Stok Bahan</h2>
+                <div id="inventoryAlerts"></div>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn btn-success" onclick="exportInventoryCSV()">📥 Export Stok</button>
+                    <button class="btn btn-info" onclick="restockAll()">🔄 Restock Semua</button>
+                </div>
+
+                <div class="inventory-row header">
+                    <div>Nama Bahan</div>
+                    <div>Satuan</div>
+                    <div>Stok Awal</div>
+                    <div>Stok Tersisa</div>
+                    <div>Minimum</div>
+                    <div>Status</div>
+                </div>
+                <div id="inventoryRows"></div>
+            </div>
+
+            <div class="grid" style="margin-top: 20px;">
+                <div class="card">
+                    <h2>➕ Tambah Stok (Restock)</h2>
+                    <div class="form-group">
+                        <label>Pilih Bahan</label>
+                        <select id="restockIng">
+                            <option value="">Pilih Bahan...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Jumlah Tambah (satuan terkecil)</label>
+                        <input type="number" id="restockQty" placeholder="Contoh: 500">
+                    </div>
+                    <button class="btn btn-success" onclick="restockIngredient()">➕ Tambah Stok</button>
+                </div>
+
+                <div class="card">
+                    <h2>📉 Penggunaan Bahan Hari Ini</h2>
+                    <div id="usageToday">
+                        <p style="color:#888;">Belum ada penjualan hari ini</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: LAPORAN -->
         <div id="tab-laporan" class="tab-content hidden">
             <div class="card" style="margin-bottom: 20px;">
                 <h2>📊 Laporan HPP & Menu</h2>
@@ -473,6 +722,9 @@
 
                     <h3 style="color:#e94560; margin: 20px 0 10px 0;">Ringkasan Menu & HPP</h3>
                     <div id="reportRecipes"></div>
+
+                    <h3 style="color:#e94560; margin: 20px 0 10px 0;">Transaksi Hari Ini</h3>
+                    <div id="reportTransactions"></div>
                 </div>
             </div>
         </div>
@@ -482,6 +734,7 @@
         // Data Storage
         let ingredients = JSON.parse(localStorage.getItem('coffeeIngredients')) || [];
         let recipes = JSON.parse(localStorage.getItem('coffeeRecipes')) || [];
+        let transactions = JSON.parse(localStorage.getItem('coffeeTransactions')) || [];
         let compRowCount = 1;
         let editingRecipeId = null;
 
@@ -490,6 +743,9 @@
             renderIngredients();
             renderRecipes();
             updateIngredientSelects();
+            renderTransactions();
+            renderInventory();
+            renderPosMenu();
         });
 
         function switchTab(tabName) {
@@ -499,6 +755,8 @@
             event.target.classList.add('active');
 
             if(tabName === 'hpp') updatePricingMenuSelect();
+            if(tabName === 'pos') { updatePosMenuSelect(); renderPosMenu(); }
+            if(tabName === 'inventory') renderInventory();
             if(tabName === 'laporan') generateReport();
         }
 
@@ -509,6 +767,7 @@
             const price = parseFloat(document.getElementById('ingPrice').value) || 0;
             const stock = parseFloat(document.getElementById('ingStock').value) || 1;
             const smallUnit = document.getElementById('ingSmallUnit').value;
+            const minStock = parseFloat(document.getElementById('ingMinStock').value) || 0;
 
             if(!name || price <= 0) {
                 alert('Nama bahan dan harga wajib diisi!');
@@ -523,17 +782,21 @@
                 unit,
                 price,
                 stock,
+                initialStock: stock,
                 smallUnit,
-                pricePerSmall
+                pricePerSmall,
+                minStock
             });
 
             localStorage.setItem('coffeeIngredients', JSON.stringify(ingredients));
             renderIngredients();
             updateIngredientSelects();
+            renderInventory();
 
             document.getElementById('ingName').value = '';
             document.getElementById('ingPrice').value = '';
-            document.getElementById('ingStock').value = '1';
+            document.getElementById('ingStock').value = '1000';
+            document.getElementById('ingMinStock').value = '200';
         }
 
         function renderIngredients() {
@@ -542,11 +805,13 @@
 
             container.innerHTML = ingredients.map(ing => {
                 total += ing.price;
+                const stockClass = ing.stock <= ing.minStock ? 'stock-low' : (ing.stock <= ing.minStock * 1.5 ? 'stock-med' : 'stock-ok');
                 return `
                     <div class="ingredient-row">
                         <div>${ing.name}</div>
                         <div>${ing.unit}</div>
                         <div>Rp ${ing.price.toLocaleString()}</div>
+                        <div class="${stockClass}">${ing.stock.toLocaleString()} ${ing.smallUnit}</div>
                         <div>Rp ${ing.pricePerSmall.toFixed(2)}/${ing.smallUnit}</div>
                         <div><button class="btn btn-danger btn-sm" onclick="deleteIngredient(${ing.id})">🗑️</button></div>
                     </div>
@@ -562,6 +827,7 @@
                 localStorage.setItem('coffeeIngredients', JSON.stringify(ingredients));
                 renderIngredients();
                 updateIngredientSelects();
+                renderInventory();
             }
         }
 
@@ -583,6 +849,22 @@
                     `<option value="${r.id}">${r.name} (${r.category})</option>`
                 ).join('');
                 pricingSelect.innerHTML = '<option value="">Pilih Menu...</option>' + recipeOptions;
+            }
+
+            const posSelect = document.getElementById('posMenuSelect');
+            if(posSelect) {
+                const recipeOptions = recipes.map(r => 
+                    `<option value="${r.id}">${r.name} - HPP: Rp ${r.hpp.toLocaleString(undefined, {maximumFractionDigits: 0})}</option>`
+                ).join('');
+                posSelect.innerHTML = '<option value="">Pilih Menu...</option>' + recipeOptions;
+            }
+
+            const restockSelect = document.getElementById('restockIng');
+            if(restockSelect) {
+                const ingOptions = ingredients.map(ing => 
+                    `<option value="${ing.id}">${ing.name} (Stok: ${ing.stock} ${ing.smallUnit})</option>`
+                ).join('');
+                restockSelect.innerHTML = '<option value="">Pilih Bahan...</option>' + ingOptions;
             }
         }
 
@@ -677,21 +959,18 @@
             return total;
         }
 
-        // === EDIT FEATURE ===
         function editRecipe(id) {
             const recipe = recipes.find(r => r.id === id);
             if(!recipe) return;
 
             editingRecipeId = id;
 
-            // Fill form
             document.getElementById('menuName').value = recipe.name;
             document.getElementById('menuCategory').value = recipe.category;
             document.getElementById('menuPortion').value = recipe.portion;
             document.getElementById('packagingCost').value = recipe.packaging;
             document.getElementById('overheadCost').value = recipe.overhead;
 
-            // Clear and rebuild composition rows
             const container = document.getElementById('recipeComposition');
             container.innerHTML = '';
             compRowCount = 0;
@@ -717,7 +996,6 @@
                 `;
                 container.appendChild(div);
 
-                // Set values
                 document.getElementById('compIng' + rowId).value = comp.ingredientId;
                 document.getElementById('compQty' + rowId).value = comp.qty;
                 document.getElementById('compUnit' + rowId).value = comp.unit;
@@ -725,30 +1003,24 @@
 
             updateIngredientSelects();
 
-            // Recalculate all costs
             recipe.composition.forEach((comp, idx) => {
                 updateCompPrice(idx);
             });
             calculateRecipeCost();
 
-            // UI changes
             document.getElementById('recipeFormTitle').textContent = '✏️ Edit Resep';
             document.getElementById('saveRecipeBtn').textContent = '💾 Update Resep';
             document.getElementById('editModeBanner').style.display = 'block';
             document.getElementById('editModeRecipeName').textContent = recipe.name;
             document.getElementById('cancelEditBtn').classList.remove('hidden');
 
-            // Highlight editing item in list
             renderRecipes();
-
-            // Scroll to form
             document.getElementById('recipeFormTitle').scrollIntoView({ behavior: 'smooth' });
         }
 
         function cancelEdit() {
             editingRecipeId = null;
 
-            // Reset form
             document.getElementById('menuName').value = '';
             document.getElementById('packagingCost').value = '0';
             document.getElementById('overheadCost').value = '0';
@@ -772,7 +1044,6 @@
             updateIngredientSelects();
             calculateRecipeCost();
 
-            // UI reset
             document.getElementById('recipeFormTitle').textContent = 'Buat Resep Menu';
             document.getElementById('saveRecipeBtn').textContent = '💾 Simpan Resep';
             document.getElementById('editModeBanner').style.display = 'none';
@@ -1048,24 +1319,55 @@
             document.getElementById('detailBEP').textContent = '0';
             document.getElementById('detailMarkup').textContent = '0x';
 
-            const rec70 = Math.ceil(recipe.hpp / 0.3);
+            // Updated recommendations with lower margins
+            const rec40 = Math.ceil(recipe.hpp / 0.6);
+            const rec45 = Math.ceil(recipe.hpp / 0.55);
+            const rec50 = Math.ceil(recipe.hpp / 0.5);
+            const rec55 = Math.ceil(recipe.hpp / 0.45);
+            const rec60 = Math.ceil(recipe.hpp / 0.4);
             const rec65 = Math.ceil(recipe.hpp / 0.35);
+            const rec70 = Math.ceil(recipe.hpp / 0.3);
             const rec75 = Math.ceil(recipe.hpp / 0.25);
 
             document.getElementById('pricingRecommendation').innerHTML = `
                 <table style="width:100%; font-size:0.9em;">
+                    <tr style="color:#e74c3c;">
+                        <td style="padding:6px;">⚠️ Margin 40%</td>
+                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec40.toLocaleString()}</td>
+                        <td style="padding:6px; text-align:right; color:#e74c3c;">Profit: Rp ${(rec40 - recipe.hpp).toLocaleString()}</td>
+                    </tr>
+                    <tr style="color:#f39c12;">
+                        <td style="padding:6px;">⚠️ Margin 45%</td>
+                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec45.toLocaleString()}</td>
+                        <td style="padding:6px; text-align:right; color:#f39c12;">Profit: Rp ${(rec45 - recipe.hpp).toLocaleString()}</td>
+                    </tr>
+                    <tr style="color:#f39c12;">
+                        <td style="padding:6px;">Margin 50%</td>
+                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec50.toLocaleString()}</td>
+                        <td style="padding:6px; text-align:right; color:#f39c12;">Profit: Rp ${(rec50 - recipe.hpp).toLocaleString()}</td>
+                    </tr>
                     <tr style="color:#aaa;">
-                        <td style="padding:6px;">Target Margin 65%</td>
+                        <td style="padding:6px;">Margin 55%</td>
+                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec55.toLocaleString()}</td>
+                        <td style="padding:6px; text-align:right; color:#2ecc71;">Profit: Rp ${(rec55 - recipe.hpp).toLocaleString()}</td>
+                    </tr>
+                    <tr style="color:#aaa;">
+                        <td style="padding:6px;">Margin 60%</td>
+                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec60.toLocaleString()}</td>
+                        <td style="padding:6px; text-align:right; color:#2ecc71;">Profit: Rp ${(rec60 - recipe.hpp).toLocaleString()}</td>
+                    </tr>
+                    <tr style="color:#aaa;">
+                        <td style="padding:6px;">Margin 65%</td>
                         <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec65.toLocaleString()}</td>
                         <td style="padding:6px; text-align:right; color:#2ecc71;">Profit: Rp ${(rec65 - recipe.hpp).toLocaleString()}</td>
                     </tr>
                     <tr style="color:#aaa;">
-                        <td style="padding:6px;">Target Margin 70%</td>
+                        <td style="padding:6px;">✅ Margin 70%</td>
                         <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec70.toLocaleString()}</td>
                         <td style="padding:6px; text-align:right; color:#2ecc71;">Profit: Rp ${(rec70 - recipe.hpp).toLocaleString()}</td>
                     </tr>
                     <tr style="color:#aaa;">
-                        <td style="padding:6px;">Target Margin 75%</td>
+                        <td style="padding:6px;">✅ Margin 75%</td>
                         <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec75.toLocaleString()}</td>
                         <td style="padding:6px; text-align:right; color:#2ecc71;">Profit: Rp ${(rec75 - recipe.hpp).toLocaleString()}</td>
                     </tr>
@@ -1113,6 +1415,396 @@
             calculateMargin();
         }
 
+        // === POS SYSTEM ===
+        function updatePosMenuSelect() {
+            const select = document.getElementById('posMenuSelect');
+            const options = recipes.map(r => 
+                `<option value="${r.id}">${r.name} - HPP: Rp ${r.hpp.toLocaleString(undefined, {maximumFractionDigits: 0})}</option>`
+            ).join('');
+            select.innerHTML = '<option value="">Pilih Menu...</option>' + options;
+        }
+
+        function renderPosMenu() {
+            const container = document.getElementById('posMenuGrid');
+            if(recipes.length === 0) {
+                container.innerHTML = '<p style="color:#888; text-align:center; grid-column: 1/-1;">Belum ada menu tersimpan</p>';
+                return;
+            }
+
+            container.innerHTML = recipes.map(r => {
+                // Check stock availability
+                let canMake = Infinity;
+                let stockInfo = [];
+                r.composition.forEach(c => {
+                    const ing = ingredients.find(i => i.id == c.ingredientId);
+                    if(ing) {
+                        let needed = c.qty;
+                        if(c.unit === 'shot') needed = c.qty * 30;
+                        const possible = Math.floor(ing.stock / needed);
+                        canMake = Math.min(canMake, possible);
+                        stockInfo.push(`${ing.name}: ${ing.stock}${ing.smallUnit}`);
+                    }
+                });
+
+                const disabled = canMake <= 0 ? 'disabled' : '';
+                const stockText = canMake <= 0 ? 'STOK HABIS' : `Bisa bikin ~${canMake} cup`;
+                const stockColor = canMake <= 0 ? '#e74c3c' : (canMake <= 5 ? '#f39c12' : '#2ecc71');
+
+                return `
+                    <div class="pos-card ${disabled}" onclick="selectPosMenu(${r.id})">
+                        <div class="pos-name">${r.name}</div>
+                        <div class="pos-cat">${r.category}</div>
+                        <div class="pos-hpp">HPP: Rp ${r.hpp.toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                        <div class="pos-price">${stockText}</div>
+                        <div class="pos-stock" style="color:${stockColor};">${stockInfo.join(' | ')}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectPosMenu(recipeId) {
+            document.getElementById('posMenuSelect').value = recipeId;
+            updatePosDetails();
+        }
+
+        function updatePosDetails() {
+            const recipeId = document.getElementById('posMenuSelect').value;
+            if(!recipeId) return;
+
+            const recipe = recipes.find(r => r.id == recipeId);
+            if(!recipe) return;
+
+            // Check stock
+            let stockHTML = '<strong>Cek Stok:</strong><br>';
+            let canMake = Infinity;
+            let lowStock = [];
+
+            recipe.composition.forEach(c => {
+                const ing = ingredients.find(i => i.id == c.ingredientId);
+                if(ing) {
+                    let needed = c.qty;
+                    if(c.unit === 'shot') needed = c.qty * 30;
+                    const possible = Math.floor(ing.stock / needed);
+                    canMake = Math.min(canMake, possible);
+
+                    const status = ing.stock <= ing.minStock ? 'stock-low' : (ing.stock <= ing.minStock * 1.5 ? 'stock-med' : 'stock-ok');
+                    stockHTML += `<span class="${status}">• ${ing.name}: ${ing.stock}${ing.smallUnit} (butuh ${needed}${ing.smallUnit} per cup)</span><br>`;
+
+                    if(ing.stock < needed) lowStock.push(ing.name);
+                }
+            });
+
+            if(lowStock.length > 0) {
+                stockHTML += `<br><span style="color:#e74c3c; font-weight:700;">⚠️ Stok tidak cukup untuk: ${lowStock.join(', ')}</span>`;
+            } else {
+                stockHTML += `<br><span style="color:#2ecc71; font-weight:700;">✅ Bisa bikin ~${canMake} cup dengan stok saat ini</span>`;
+            }
+
+            document.getElementById('posStockCheck').innerHTML = stockHTML;
+
+            // Auto fill selling price with 70% margin default
+            const defaultPrice = Math.ceil(recipe.hpp / 0.3);
+            document.getElementById('posSellingPrice').value = defaultPrice;
+
+            updatePosCalculation();
+        }
+
+        function updatePosCalculation() {
+            const recipeId = document.getElementById('posMenuSelect').value;
+            const qty = parseInt(document.getElementById('posQty').value) || 1;
+            const price = parseFloat(document.getElementById('posSellingPrice').value) || 0;
+
+            if(!recipeId) return;
+
+            const recipe = recipes.find(r => r.id == recipeId);
+            if(!recipe) return;
+
+            const totalHPP = recipe.hpp * qty;
+            const revenue = price * qty;
+            const profit = revenue - totalHPP;
+
+            document.getElementById('posTotalHPP').textContent = 'Rp ' + totalHPP.toLocaleString();
+            document.getElementById('posRevenue').textContent = 'Rp ' + revenue.toLocaleString();
+            document.getElementById('posProfit').textContent = 'Rp ' + profit.toLocaleString();
+            document.getElementById('posProfit').className = 'value ' + (profit >= 0 ? 'profit' : 'loss');
+        }
+
+        document.getElementById('posQty')?.addEventListener('input', updatePosCalculation);
+        document.getElementById('posSellingPrice')?.addEventListener('input', updatePosCalculation);
+
+        function processSale() {
+            const recipeId = document.getElementById('posMenuSelect').value;
+            const qty = parseInt(document.getElementById('posQty').value) || 1;
+            const price = parseFloat(document.getElementById('posSellingPrice').value) || 0;
+            const note = document.getElementById('posNote').value;
+
+            if(!recipeId) {
+                alert('Pilih menu dulu!');
+                return;
+            }
+            if(price <= 0) {
+                alert('Masukin harga jual!');
+                return;
+            }
+
+            const recipe = recipes.find(r => r.id == recipeId);
+            if(!recipe) return;
+
+            // Check and deduct stock
+            let insufficient = [];
+            recipe.composition.forEach(c => {
+                const ing = ingredients.find(i => i.id == c.ingredientId);
+                if(ing) {
+                    let needed = c.qty;
+                    if(c.unit === 'shot') needed = c.qty * 30;
+                    const totalNeeded = needed * qty;
+
+                    if(ing.stock < totalNeeded) {
+                        insufficient.push(`${ing.name} (butuh ${totalNeeded}, tersisa ${ing.stock})`);
+                    }
+                }
+            });
+
+            if(insufficient.length > 0) {
+                alert('❌ Stok tidak cukup!\n\n' + insufficient.join('\n'));
+                return;
+            }
+
+            // Deduct stock
+            recipe.composition.forEach(c => {
+                const ing = ingredients.find(i => i.id == c.ingredientId);
+                if(ing) {
+                    let needed = c.qty;
+                    if(c.unit === 'shot') needed = c.qty * 30;
+                    const totalNeeded = needed * qty;
+                    ing.stock -= totalNeeded;
+                }
+            });
+
+            localStorage.setItem('coffeeIngredients', JSON.stringify(ingredients));
+
+            // Record transaction
+            const transaction = {
+                id: Date.now(),
+                recipeId,
+                recipeName: recipe.name,
+                qty,
+                hpp: recipe.hpp * qty,
+                sellingPrice: price,
+                revenue: price * qty,
+                profit: (price * qty) - (recipe.hpp * qty),
+                note,
+                time: new Date().toLocaleString('id-ID')
+            };
+
+            transactions.push(transaction);
+            localStorage.setItem('coffeeTransactions', JSON.stringify(transactions));
+
+            // Reset POS form
+            document.getElementById('posMenuSelect').value = '';
+            document.getElementById('posQty').value = '1';
+            document.getElementById('posSellingPrice').value = '';
+            document.getElementById('posNote').value = '';
+            document.getElementById('posStockCheck').innerHTML = '';
+            document.getElementById('posTotalHPP').textContent = 'Rp 0';
+            document.getElementById('posRevenue').textContent = 'Rp 0';
+            document.getElementById('posProfit').textContent = 'Rp 0';
+
+            // Refresh all views
+            renderIngredients();
+            renderInventory();
+            renderPosMenu();
+            renderTransactions();
+
+            alert(`✅ Penjualan berhasil!\n\n${recipe.name} x${qty}\nRevenue: Rp ${transaction.revenue.toLocaleString()}\nProfit: Rp ${transaction.profit.toLocaleString()}\n\nStok bahan telah berkurang.`);
+        }
+
+        function renderTransactions() {
+            const container = document.getElementById('transactionRows');
+            const today = new Date().toDateString();
+
+            const todayTrans = transactions.filter(t => new Date(t.time).toDateString() === today);
+
+            if(todayTrans.length === 0) {
+                container.innerHTML = '<div class="transaction-row"><div colspan="5" style="text-align:center; color:#888;">Belum ada transaksi hari ini</div></div>';
+                document.getElementById('todayRevenue').textContent = 'Total Revenue Hari Ini: Rp 0';
+                return;
+            }
+
+            let totalRev = 0;
+            container.innerHTML = todayTrans.slice().reverse().map(t => {
+                totalRev += t.revenue;
+                return `
+                    <div class="transaction-row">
+                        <div>${t.time.split(' ')[1] || t.time}</div>
+                        <div>${t.recipeName}</div>
+                        <div>${t.qty} cup</div>
+                        <div>Rp ${t.revenue.toLocaleString()}</div>
+                        <div><button class="btn btn-danger btn-sm" onclick="voidTransaction(${t.id})">✕</button></div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('todayRevenue').textContent = 'Total Revenue Hari Ini: Rp ' + totalRev.toLocaleString();
+        }
+
+        function voidTransaction(id) {
+            if(!confirm('Batalkan transaksi ini? Stok akan dikembalikan.')) return;
+
+            const tIndex = transactions.findIndex(t => t.id === id);
+            if(tIndex === -1) return;
+
+            const t = transactions[tIndex];
+            const recipe = recipes.find(r => r.id == t.recipeId);
+
+            // Return stock
+            if(recipe) {
+                recipe.composition.forEach(c => {
+                    const ing = ingredients.find(i => i.id == c.ingredientId);
+                    if(ing) {
+                        let needed = c.qty;
+                        if(c.unit === 'shot') needed = c.qty * 30;
+                        const totalNeeded = needed * t.qty;
+                        ing.stock += totalNeeded;
+                    }
+                });
+                localStorage.setItem('coffeeIngredients', JSON.stringify(ingredients));
+            }
+
+            transactions.splice(tIndex, 1);
+            localStorage.setItem('coffeeTransactions', JSON.stringify(transactions));
+
+            renderTransactions();
+            renderIngredients();
+            renderInventory();
+            renderPosMenu();
+        }
+
+        // === INVENTORY ===
+        function renderInventory() {
+            const container = document.getElementById('inventoryRows');
+            const alerts = document.getElementById('inventoryAlerts');
+
+            if(ingredients.length === 0) {
+                container.innerHTML = '<p style="color:#888;">Belum ada bahan</p>';
+                alerts.innerHTML = '';
+                return;
+            }
+
+            let alertHTML = '';
+
+            container.innerHTML = ingredients.map(ing => {
+                const percent = ((ing.stock / ing.initialStock) * 100).toFixed(1);
+                const statusClass = ing.stock <= ing.minStock ? 'stock-low' : (ing.stock <= ing.minStock * 1.5 ? 'stock-med' : 'stock-ok');
+                const statusText = ing.stock <= ing.minStock ? '🔴 KRITIS' : (ing.stock <= ing.minStock * 1.5 ? '🟡 RENDAH' : '🟢 AMAN');
+
+                if(ing.stock <= ing.minStock) {
+                    alertHTML += `<div class="alert-box">🔴 ${ing.name}: Stok ${ing.stock}${ing.smallUnit} (min: ${ing.minStock}${ing.smallUnit}) - Segera restock!</div>`;
+                }
+
+                return `
+                    <div class="inventory-row">
+                        <div>${ing.name}</div>
+                        <div>${ing.smallUnit}</div>
+                        <div>${ing.initialStock.toLocaleString()}</div>
+                        <div class="${statusClass}">${ing.stock.toLocaleString()}</div>
+                        <div>${ing.minStock.toLocaleString()}</div>
+                        <div class="${statusClass}">${statusText} (${percent}%)</div>
+                    </div>
+                `;
+            }).join('');
+
+            alerts.innerHTML = alertHTML || '<div style="color:#2ecc71; margin-bottom:15px;">✅ Semua stok aman</div>';
+
+            // Update restock select
+            const restockSelect = document.getElementById('restockIng');
+            if(restockSelect) {
+                const ingOptions = ingredients.map(ing => 
+                    `<option value="${ing.id}">${ing.name} (Stok: ${ing.stock} ${ing.smallUnit})</option>`
+                ).join('');
+                restockSelect.innerHTML = '<option value="">Pilih Bahan...</option>' + ingOptions;
+            }
+
+            // Usage today
+            const today = new Date().toDateString();
+            const todayTrans = transactions.filter(t => new Date(t.time).toDateString() === today);
+
+            const usageMap = {};
+            todayTrans.forEach(t => {
+                const recipe = recipes.find(r => r.id == t.recipeId);
+                if(recipe) {
+                    recipe.composition.forEach(c => {
+                        const ing = ingredients.find(i => i.id == c.ingredientId);
+                        if(ing) {
+                            let needed = c.qty;
+                            if(c.unit === 'shot') needed = c.qty * 30;
+                            const totalUsed = needed * t.qty;
+                            usageMap[ing.name] = (usageMap[ing.name] || 0) + totalUsed;
+                        }
+                    });
+                }
+            });
+
+            const usageHTML = Object.entries(usageMap).map(([name, qty]) => 
+                `<div style="padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">• ${name}: ${qty.toLocaleString()} unit terpakai</div>`
+            ).join('');
+
+            document.getElementById('usageToday').innerHTML = usageHTML || '<p style="color:#888;">Belum ada penjualan hari ini</p>';
+        }
+
+        function restockIngredient() {
+            const ingId = document.getElementById('restockIng').value;
+            const qty = parseFloat(document.getElementById('restockQty').value) || 0;
+
+            if(!ingId || qty <= 0) {
+                alert('Pilih bahan dan masukkan jumlah!');
+                return;
+            }
+
+            const ing = ingredients.find(i => i.id == ingId);
+            if(!ing) return;
+
+            ing.stock += qty;
+            ing.initialStock += qty; // Also increase initial stock reference
+            localStorage.setItem('coffeeIngredients', JSON.stringify(ingredients));
+
+            document.getElementById('restockQty').value = '';
+            renderInventory();
+            renderIngredients();
+            renderPosMenu();
+
+            alert(`✅ Stok ${ing.name} bertambah ${qty} ${ing.smallUnit}. Total sekarang: ${ing.stock} ${ing.smallUnit}`);
+        }
+
+        function restockAll() {
+            if(!confirm('Restock semua bahan ke stok awal?')) return;
+
+            ingredients.forEach(ing => {
+                ing.stock = ing.initialStock;
+            });
+
+            localStorage.setItem('coffeeIngredients', JSON.stringify(ingredients));
+            renderInventory();
+            renderIngredients();
+            renderPosMenu();
+
+            alert('✅ Semua bahan telah di-restock ke jumlah awal!');
+        }
+
+        function exportInventoryCSV() {
+            let csv = 'Nama Bahan,Satuan,Stok Awal,Stok Tersisa,Minimum,Status\n';
+            ingredients.forEach(ing => {
+                const status = ing.stock <= ing.minStock ? 'KRITIS' : (ing.stock <= ing.minStock * 1.5 ? 'RENDAH' : 'AMAN');
+                csv += `"${ing.name}","${ing.smallUnit}",${ing.initialStock},${ing.stock},${ing.minStock},"${status}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'Inventory_Stok_' + new Date().toISOString().split('T')[0] + '.csv';
+            link.click();
+        }
+
         // === LAPORAN ===
         function generateReport() {
             const ingReport = document.getElementById('reportIngredients');
@@ -1120,13 +1812,14 @@
                 ingReport.innerHTML = '<p style="color:#888;">Tidak ada data bahan</p>';
             } else {
                 let html = '<table style="width:100%; border-collapse:collapse; font-size:0.9em;">';
-                html += '<tr style="background:#e94560; color:white;"><th style="padding:10px; text-align:left;">Nama Bahan</th><th>Satuan</th><th>Harga Beli</th><th>Isi</th><th>Harga Terkecil</th></tr>';
+                html += '<tr style="background:#e94560; color:white;"><th style="padding:10px; text-align:left;">Nama Bahan</th><th>Satuan</th><th>Harga Beli</th><th>Stok</th><th>Min</th><th>Harga Terkecil</th></tr>';
                 ingredients.forEach((ing, idx) => {
                     html += `<tr style="background:${idx%2===0?'rgba(255,255,255,0.03)':'transparent'}">
                         <td style="padding:8px;">${ing.name}</td>
                         <td style="padding:8px; text-align:center;">${ing.unit}</td>
                         <td style="padding:8px; text-align:right;">Rp ${ing.price.toLocaleString()}</td>
                         <td style="padding:8px; text-align:center;">${ing.stock} ${ing.smallUnit}</td>
+                        <td style="padding:8px; text-align:center;">${ing.minStock}</td>
                         <td style="padding:8px; text-align:right;">Rp ${ing.pricePerSmall.toFixed(2)}</td>
                     </tr>`;
                 });
@@ -1152,13 +1845,45 @@
                 html += '</table>';
                 recReport.innerHTML = html;
             }
+
+            const transReport = document.getElementById('reportTransactions');
+            const today = new Date().toDateString();
+            const todayTrans = transactions.filter(t => new Date(t.time).toDateString() === today);
+
+            if(todayTrans.length === 0) {
+                transReport.innerHTML = '<p style="color:#888;">Tidak ada transaksi hari ini</p>';
+            } else {
+                let totalRev = 0;
+                let totalProfit = 0;
+                let html = '<table style="width:100%; border-collapse:collapse; font-size:0.9em;">';
+                html += '<tr style="background:#e94560; color:white;"><th style="padding:10px;">Waktu</th><th>Menu</th><th>Qty</th><th>HPP</th><th>Revenue</th><th>Profit</th></tr>';
+                todayTrans.forEach((t, idx) => {
+                    totalRev += t.revenue;
+                    totalProfit += t.profit;
+                    html += `<tr style="background:${idx%2===0?'rgba(255,255,255,0.03)':'transparent'}">
+                        <td style="padding:8px;">${t.time}</td>
+                        <td style="padding:8px;">${t.recipeName}</td>
+                        <td style="padding:8px; text-align:center;">${t.qty}</td>
+                        <td style="padding:8px; text-align:right;">Rp ${t.hpp.toLocaleString()}</td>
+                        <td style="padding:8px; text-align:right;">Rp ${t.revenue.toLocaleString()}</td>
+                        <td style="padding:8px; text-align:right; color:#2ecc71;">Rp ${t.profit.toLocaleString()}</td>
+                    </tr>`;
+                });
+                html += `<tr style="background:rgba(233,69,96,0.2); font-weight:700;">
+                    <td colspan="4" style="padding:10px; text-align:right;">TOTAL</td>
+                    <td style="padding:10px; text-align:right;">Rp ${totalRev.toLocaleString()}</td>
+                    <td style="padding:10px; text-align:right; color:#2ecc71;">Rp ${totalProfit.toLocaleString()}</td>
+                </tr>`;
+                html += '</table>';
+                transReport.innerHTML = html;
+            }
         }
 
         function exportToCSV() {
             let csv = 'DATA BAHAN BAKU\n';
-            csv += 'Nama Bahan,Satuan Pembelian,Harga Beli,Isi per Satuan,Satuan Terkecil,Harga per Satuan Terkecil\n';
+            csv += 'Nama Bahan,Satuan Pembelian,Harga Beli,Isi per Satuan,Satuan Terkecil,Harga per Satuan Terkecil,Stok,Minimum\n';
             ingredients.forEach(ing => {
-                csv += `"${ing.name}","${ing.unit}",${ing.price},${ing.stock},"${ing.smallUnit}",${ing.pricePerSmall.toFixed(2)}\n`;
+                csv += `"${ing.name}","${ing.unit}",${ing.price},${ing.stock},"${ing.smallUnit}",${ing.pricePerSmall.toFixed(2)},${ing.stock},${ing.minStock}\n`;
             });
 
             csv += '\\nDATA RESEP MENU\n';
@@ -1169,10 +1894,12 @@
             });
 
             csv += '\\nANALISIS HPP PER MENU\n';
-            csv += 'Nama Menu,HPP,Harga Jual (asumsi 70% margin),Profit per Cup\n';
+            csv += 'Nama Menu,HPP,Harga Jual (margin 40%),Harga Jual (margin 50%),Harga Jual (margin 70%),Profit 70%\n';
             recipes.forEach(r => {
-                const price70 = Math.ceil(r.hpp / 0.3);
-                csv += `"${r.name}",${r.hpp.toFixed(2)},${price70},${(price70 - r.hpp).toFixed(2)}\n`;
+                const p40 = Math.ceil(r.hpp / 0.6);
+                const p50 = Math.ceil(r.hpp / 0.5);
+                const p70 = Math.ceil(r.hpp / 0.3);
+                csv += `"${r.name}",${r.hpp.toFixed(2)},${p40},${p50},${p70},${(p70 - r.hpp).toFixed(2)}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1186,12 +1913,17 @@
             if(confirm('Yakin mau hapus SEMUA data? Ini gak bisa di-undo!')) {
                 localStorage.removeItem('coffeeIngredients');
                 localStorage.removeItem('coffeeRecipes');
+                localStorage.removeItem('coffeeTransactions');
                 ingredients = [];
                 recipes = [];
+                transactions = [];
                 if(editingRecipeId) cancelEdit();
                 renderIngredients();
                 renderRecipes();
                 updateIngredientSelects();
+                renderTransactions();
+                renderInventory();
+                renderPosMenu();
                 alert('Semua data telah dihapus!');
             }
         }
