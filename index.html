@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kalkulator HPP Kopi + POS Inventory</title>
+    <title>Kalkulator HPP Kopi + POS + Inventory</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -199,7 +199,6 @@
             flex: 1;
         }
 
-        /* POS Styles */
         .pos-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -294,29 +293,38 @@
             border-bottom: 2px solid #e94560;
         }
 
-        .qty-btn {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: none;
-            background: #e94560;
-            color: white;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 1em;
+        .cost-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            align-items: center;
+        }
+        .cost-row.header {
+            font-weight: 600;
+            color: #e94560;
+            border-bottom: 2px solid #e94560;
         }
 
-        .receipt {
-            background: white;
-            color: #333;
-            padding: 20px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
+        .beep-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+            gap: 8px;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            align-items: center;
             font-size: 0.9em;
-            line-height: 1.6;
         }
-        .receipt h3 { text-align: center; margin-bottom: 15px; color: #333; }
-        .receipt .line { border-top: 1px dashed #999; margin: 10px 0; }
+        .beep-row.header {
+            font-weight: 600;
+            color: #e94560;
+            border-bottom: 2px solid #e94560;
+        }
+
+        .highlight-green { color: #2ecc71; font-weight: 700; }
+        .highlight-red { color: #e74c3c; font-weight: 700; }
+        .highlight-yellow { color: #f39c12; font-weight: 700; }
     </style>
 <base target="_blank">
 </head>
@@ -331,6 +339,7 @@
             <div class="tab" onclick="switchTab('hpp')">💰 HPP & Pricing</div>
             <div class="tab" onclick="switchTab('pos')">🛒 POS / Kasir</div>
             <div class="tab" onclick="switchTab('inventory')">📦 Inventory</div>
+            <div class="tab" onclick="switchTab('biaya')">⚙️ Biaya Operasional</div>
             <div class="tab" onclick="switchTab('laporan')">📊 Laporan</div>
         </div>
 
@@ -706,7 +715,81 @@
             </div>
         </div>
 
-        <!-- TAB 6: LAPORAN -->
+        <!-- TAB 6: BIAYA OPERASIONAL -->
+        <div id="tab-biaya" class="tab-content hidden">
+            <div class="grid">
+                <div class="card">
+                    <h2>⚙️ Biaya Operasional (Fixed Cost)</h2>
+                    <p style="color:#aaa; margin-bottom:15px; font-size:0.9em;">Masukkan biaya operasional per bulan. Akan otomatis dihitung per hari untuk BEP.</p>
+
+                    <div class="form-group">
+                        <label>Gaji Karyawan per Hari (Rp)</label>
+                        <input type="number" id="costSalary" value="100000">
+                        <div class="help-text">Total gaji harian (bisa 1-2 orang)</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Listrik per Bulan (Rp)</label>
+                        <input type="number" id="costElectricity" value="150000">
+                    </div>
+                    <div class="form-group">
+                        <label>Gas per Bulan (Rp)</label>
+                        <input type="number" id="costGas" value="50000">
+                    </div>
+                    <div class="form-group">
+                        <label>Air per Bulan (Rp)</label>
+                        <input type="number" id="costWater" value="140000">
+                    </div>
+                    <div class="form-group">
+                        <label>Sewa Tempat per Bulan (Rp)</label>
+                        <input type="number" id="costRent" value="300000">
+                    </div>
+                    <div class="form-group">
+                        <label>Lain-lain per Bulan (Rp)</label>
+                        <input type="number" id="costOther" value="0">
+                        <div class="help-text">Internet, marketing, maintenance, dll</div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="saveOperationalCosts()">💾 Simpan & Hitung Ulang</button>
+                    <button class="btn btn-secondary" onclick="resetOperationalCosts()">🔄 Reset Default</button>
+                </div>
+
+                <div class="card">
+                    <h2>📊 Ringkasan Biaya Harian</h2>
+                    <div id="costSummary">
+                        <div class="cost-row header">
+                            <div>Komponen</div>
+                            <div>Per Bulan</div>
+                            <div>Per Hari</div>
+                            <div>% dari Total</div>
+                        </div>
+                        <div id="costRows"></div>
+                        <div class="total-row" id="totalCostDaily">Total Fixed Cost Harian: Rp 0</div>
+                    </div>
+
+                    <div class="summary-box" style="margin-top: 20px;">
+                        <h3 style="color:#fff; margin-bottom:15px;">Overhead per Cup (by Volume)</h3>
+                        <div id="overheadByVolume"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <h2>🎯 BEP Analysis per Menu</h2>
+                <p style="color:#aaa; margin-bottom:15px; font-size:0.9em;">Break Even Point: berapa cup per hari yang harus laku biar balik modal.</p>
+
+                <div class="beep-row header">
+                    <div>Menu</div>
+                    <div>HPP</div>
+                    <div>Profit @70%</div>
+                    <div>BEP (cup/hari)</div>
+                    <div>@40% Margin</div>
+                    <div>@50% Margin</div>
+                </div>
+                <div id="bepRows"></div>
+            </div>
+        </div>
+
+        <!-- TAB 7: LAPORAN -->
         <div id="tab-laporan" class="tab-content hidden">
             <div class="card" style="margin-bottom: 20px;">
                 <h2>📊 Laporan HPP & Menu</h2>
@@ -723,6 +806,9 @@
                     <h3 style="color:#e94560; margin: 20px 0 10px 0;">Ringkasan Menu & HPP</h3>
                     <div id="reportRecipes"></div>
 
+                    <h3 style="color:#e94560; margin: 20px 0 10px 0;">Biaya Operasional</h3>
+                    <div id="reportCosts"></div>
+
                     <h3 style="color:#e94560; margin: 20px 0 10px 0;">Transaksi Hari Ini</h3>
                     <div id="reportTransactions"></div>
                 </div>
@@ -735,17 +821,28 @@
         let ingredients = JSON.parse(localStorage.getItem('coffeeIngredients')) || [];
         let recipes = JSON.parse(localStorage.getItem('coffeeRecipes')) || [];
         let transactions = JSON.parse(localStorage.getItem('coffeeTransactions')) || [];
+        let operationalCosts = JSON.parse(localStorage.getItem('coffeeCosts')) || {
+            salary: 100000,
+            electricity: 150000,
+            gas: 50000,
+            water: 140000,
+            rent: 300000,
+            other: 0
+        };
         let compRowCount = 1;
         let editingRecipeId = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            loadCostInputs();
             renderIngredients();
             renderRecipes();
             updateIngredientSelects();
             renderTransactions();
             renderInventory();
             renderPosMenu();
+            renderCostSummary();
+            renderBEPAnalysis();
         });
 
         function switchTab(tabName) {
@@ -757,7 +854,138 @@
             if(tabName === 'hpp') updatePricingMenuSelect();
             if(tabName === 'pos') { updatePosMenuSelect(); renderPosMenu(); }
             if(tabName === 'inventory') renderInventory();
+            if(tabName === 'biaya') { renderCostSummary(); renderBEPAnalysis(); }
             if(tabName === 'laporan') generateReport();
+        }
+
+        // === OPERATIONAL COSTS ===
+        function loadCostInputs() {
+            document.getElementById('costSalary').value = operationalCosts.salary;
+            document.getElementById('costElectricity').value = operationalCosts.electricity;
+            document.getElementById('costGas').value = operationalCosts.gas;
+            document.getElementById('costWater').value = operationalCosts.water;
+            document.getElementById('costRent').value = operationalCosts.rent;
+            document.getElementById('costOther').value = operationalCosts.other;
+        }
+
+        function getDailyFixedCost() {
+            const monthly = operationalCosts.electricity + operationalCosts.gas + 
+                          operationalCosts.water + operationalCosts.rent + operationalCosts.other;
+            return operationalCosts.salary + (monthly / 30);
+        }
+
+        function saveOperationalCosts() {
+            operationalCosts = {
+                salary: parseFloat(document.getElementById('costSalary').value) || 0,
+                electricity: parseFloat(document.getElementById('costElectricity').value) || 0,
+                gas: parseFloat(document.getElementById('costGas').value) || 0,
+                water: parseFloat(document.getElementById('costWater').value) || 0,
+                rent: parseFloat(document.getElementById('costRent').value) || 0,
+                other: parseFloat(document.getElementById('costOther').value) || 0
+            };
+            localStorage.setItem('coffeeCosts', JSON.stringify(operationalCosts));
+            renderCostSummary();
+            renderBEPAnalysis();
+            alert('Biaya operasional diupdate! BEP & overhead auto-recalculate.');
+        }
+
+        function resetOperationalCosts() {
+            operationalCosts = {
+                salary: 100000,
+                electricity: 150000,
+                gas: 50000,
+                water: 140000,
+                rent: 300000,
+                other: 0
+            };
+            localStorage.setItem('coffeeCosts', JSON.stringify(operationalCosts));
+            loadCostInputs();
+            renderCostSummary();
+            renderBEPAnalysis();
+        }
+
+        function renderCostSummary() {
+            const daily = getDailyFixedCost();
+            const monthly = operationalCosts.electricity + operationalCosts.gas + 
+                          operationalCosts.water + operationalCosts.rent + operationalCosts.other;
+            const totalMonthly = monthly + (operationalCosts.salary * 30);
+
+            const rows = [
+                { name: 'Gaji Karyawan', monthly: operationalCosts.salary * 30, daily: operationalCosts.salary },
+                { name: 'Listrik', monthly: operationalCosts.electricity, daily: operationalCosts.electricity / 30 },
+                { name: 'Gas', monthly: operationalCosts.gas, daily: operationalCosts.gas / 30 },
+                { name: 'Air', monthly: operationalCosts.water, daily: operationalCosts.water / 30 },
+                { name: 'Sewa', monthly: operationalCosts.rent, daily: operationalCosts.rent / 30 },
+                { name: 'Lain-lain', monthly: operationalCosts.other, daily: operationalCosts.other / 30 }
+            ];
+
+            document.getElementById('costRows').innerHTML = rows.map(r => `
+                <div class="cost-row">
+                    <div>${r.name}</div>
+                    <div>Rp ${r.monthly.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                    <div>Rp ${r.daily.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                    <div>${((r.monthly / totalMonthly) * 100).toFixed(1)}%</div>
+                </div>
+            `).join('');
+
+            document.getElementById('totalCostDaily').textContent = 
+                `Total Fixed Cost Harian: Rp ${daily.toLocaleString(undefined, {maximumFractionDigits:0})} | Bulanan: Rp ${totalMonthly.toLocaleString(undefined, {maximumFractionDigits:0})}`;
+
+            const volumes = [10, 15, 20, 25, 30, 40, 50, 80, 100];
+            document.getElementById('overheadByVolume').innerHTML = `
+                <table style="width:100%; font-size:0.9em;">
+                    <tr style="color:#aaa;">
+                        <th style="padding:8px; text-align:left;">Volume/Hari</th>
+                        <th style="padding:8px; text-align:right;">Overhead/Cup</th>
+                        <th style="padding:8px; text-align:right;">Status</th>
+                    </tr>
+                    ${volumes.map(v => {
+                        const overhead = daily / v;
+                        const status = v < 20 ? '⚠️ Minimum' : (v < 30 ? '🟡 Building' : '✅ Ideal');
+                        return `<tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
+                            <td style="padding:8px;">${v} cup</td>
+                            <td style="padding:8px; text-align:right; color:${v < 20 ? '#f39c12' : '#2ecc71'};">Rp ${overhead.toLocaleString(undefined, {maximumFractionDigits:0})}</td>
+                            <td style="padding:8px; text-align:right;">${status}</td>
+                        </tr>`;
+                    }).join('')}
+                </table>
+            `;
+        }
+
+        function renderBEPAnalysis() {
+            const daily = getDailyFixedCost();
+            const container = document.getElementById('bepRows');
+
+            if(recipes.length === 0) {
+                container.innerHTML = '<p style="color:#888;">Belum ada resep</p>';
+                return;
+            }
+
+            container.innerHTML = recipes.map(r => {
+                const profit70 = (r.hpp / 0.3) - r.hpp;
+                const bep70 = Math.ceil(daily / profit70);
+
+                const price40 = Math.ceil(r.hpp / 0.6);
+                const profit40 = price40 - r.hpp;
+                const bep40 = profit40 > 0 ? Math.ceil(daily / profit40) : '∞';
+
+                const price50 = Math.ceil(r.hpp / 0.5);
+                const profit50 = price50 - r.hpp;
+                const bep50 = profit50 > 0 ? Math.ceil(daily / profit50) : '∞';
+
+                const status70 = bep70 <= 10 ? 'highlight-green' : (bep70 <= 20 ? 'highlight-yellow' : 'highlight-red');
+
+                return `
+                    <div class="beep-row">
+                        <div><strong>${r.name}</strong></div>
+                        <div>Rp ${r.hpp.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                        <div>Rp ${profit70.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                        <div class="${status70}">${bep70} cup</div>
+                        <div>${bep40 === '∞' ? '∞' : bep40 + ' cup'}</div>
+                        <div>${bep50 === '∞' ? '∞' : bep50 + ' cup'}</div>
+                    </div>
+                `;
+            }).join('');
         }
 
         // === MASTER BAHAN ===
@@ -1116,6 +1344,7 @@
             cancelEdit();
             renderRecipes();
             updateIngredientSelects();
+            renderBEPAnalysis();
 
             alert('Resep berhasil diupdate!');
         }
@@ -1182,6 +1411,7 @@
             localStorage.setItem('coffeeRecipes', JSON.stringify(recipes));
             renderRecipes();
             updateIngredientSelects();
+            renderBEPAnalysis();
 
             document.getElementById('menuName').value = '';
             document.getElementById('packagingCost').value = '0';
@@ -1244,6 +1474,7 @@
                 localStorage.setItem('coffeeRecipes', JSON.stringify(recipes));
                 renderRecipes();
                 updateIngredientSelects();
+                renderBEPAnalysis();
             }
         }
 
@@ -1319,60 +1550,24 @@
             document.getElementById('detailBEP').textContent = '0';
             document.getElementById('detailMarkup').textContent = '0x';
 
-            // Updated recommendations with lower margins
-            const rec40 = Math.ceil(recipe.hpp / 0.6);
-            const rec45 = Math.ceil(recipe.hpp / 0.55);
-            const rec50 = Math.ceil(recipe.hpp / 0.5);
-            const rec55 = Math.ceil(recipe.hpp / 0.45);
-            const rec60 = Math.ceil(recipe.hpp / 0.4);
-            const rec65 = Math.ceil(recipe.hpp / 0.35);
-            const rec70 = Math.ceil(recipe.hpp / 0.3);
-            const rec75 = Math.ceil(recipe.hpp / 0.25);
+            const margins = [40, 45, 50, 55, 60, 65, 70, 75];
+            let recHTML = '<table style="width:100%; font-size:0.9em;">';
+            margins.forEach(m => {
+                const price = Math.ceil(recipe.hpp / (1 - (m/100)));
+                const profit = price - recipe.hpp;
+                const color = m < 50 ? '#e74c3c' : (m < 60 ? '#f39c12' : '#2ecc71');
+                const warning = m < 50 ? '⚠️ ' : (m === 70 ? '✅ ' : '');
+                recHTML += `
+                    <tr style="color:#aaa;">
+                        <td style="padding:6px;">${warning}Margin ${m}%</td>
+                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${price.toLocaleString()}</td>
+                        <td style="padding:6px; text-align:right; color:${color};">Profit: Rp ${profit.toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+            recHTML += '</table>';
 
-            document.getElementById('pricingRecommendation').innerHTML = `
-                <table style="width:100%; font-size:0.9em;">
-                    <tr style="color:#e74c3c;">
-                        <td style="padding:6px;">⚠️ Margin 40%</td>
-                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec40.toLocaleString()}</td>
-                        <td style="padding:6px; text-align:right; color:#e74c3c;">Profit: Rp ${(rec40 - recipe.hpp).toLocaleString()}</td>
-                    </tr>
-                    <tr style="color:#f39c12;">
-                        <td style="padding:6px;">⚠️ Margin 45%</td>
-                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec45.toLocaleString()}</td>
-                        <td style="padding:6px; text-align:right; color:#f39c12;">Profit: Rp ${(rec45 - recipe.hpp).toLocaleString()}</td>
-                    </tr>
-                    <tr style="color:#f39c12;">
-                        <td style="padding:6px;">Margin 50%</td>
-                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec50.toLocaleString()}</td>
-                        <td style="padding:6px; text-align:right; color:#f39c12;">Profit: Rp ${(rec50 - recipe.hpp).toLocaleString()}</td>
-                    </tr>
-                    <tr style="color:#aaa;">
-                        <td style="padding:6px;">Margin 55%</td>
-                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec55.toLocaleString()}</td>
-                        <td style="padding:6px; text-align:right; color:#2ecc71;">Profit: Rp ${(rec55 - recipe.hpp).toLocaleString()}</td>
-                    </tr>
-                    <tr style="color:#aaa;">
-                        <td style="padding:6px;">Margin 60%</td>
-                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec60.toLocaleString()}</td>
-                        <td style="padding:6px; text-align:right; color:#2ecc71;">Profit: Rp ${(rec60 - recipe.hpp).toLocaleString()}</td>
-                    </tr>
-                    <tr style="color:#aaa;">
-                        <td style="padding:6px;">Margin 65%</td>
-                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec65.toLocaleString()}</td>
-                        <td style="padding:6px; text-align:right; color:#2ecc71;">Profit: Rp ${(rec65 - recipe.hpp).toLocaleString()}</td>
-                    </tr>
-                    <tr style="color:#aaa;">
-                        <td style="padding:6px;">✅ Margin 70%</td>
-                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec70.toLocaleString()}</td>
-                        <td style="padding:6px; text-align:right; color:#2ecc71;">Profit: Rp ${(rec70 - recipe.hpp).toLocaleString()}</td>
-                    </tr>
-                    <tr style="color:#aaa;">
-                        <td style="padding:6px;">✅ Margin 75%</td>
-                        <td style="padding:6px; text-align:right; color:#fff; font-weight:600;">Rp ${rec75.toLocaleString()}</td>
-                        <td style="padding:6px; text-align:right; color:#2ecc71;">Profit: Rp ${(rec75 - recipe.hpp).toLocaleString()}</td>
-                    </tr>
-                </table>
-            `;
+            document.getElementById('pricingRecommendation').innerHTML = recHTML;
         }
 
         function calculateMargin() {
@@ -1387,14 +1582,14 @@
             const profit = sellingPrice - recipe.hpp;
             const margin = ((profit / sellingPrice) * 100);
             const markup = (sellingPrice / recipe.hpp).toFixed(2);
-
-            const bep = Math.ceil(500000 / profit);
+            const daily = getDailyFixedCost();
+            const bep = profit > 0 ? Math.ceil(daily / profit) : '∞';
 
             document.getElementById('detailSelling').textContent = 'Rp ' + sellingPrice.toLocaleString();
             document.getElementById('detailProfit').textContent = 'Rp ' + profit.toLocaleString();
             document.getElementById('detailMargin').textContent = margin.toFixed(1) + '%';
             document.getElementById('detailMargin').className = 'value ' + (margin >= 50 ? 'profit' : 'loss');
-            document.getElementById('detailBEP').textContent = bep > 0 && bep < 99999 ? bep + ' cup' : 'N/A';
+            document.getElementById('detailBEP').textContent = bep === '∞' ? '∞' : bep + ' cup';
             document.getElementById('detailMarkup').textContent = markup + 'x';
 
             document.getElementById('targetMargin').value = margin.toFixed(1);
@@ -1432,7 +1627,6 @@
             }
 
             container.innerHTML = recipes.map(r => {
-                // Check stock availability
                 let canMake = Infinity;
                 let stockInfo = [];
                 r.composition.forEach(c => {
@@ -1474,7 +1668,6 @@
             const recipe = recipes.find(r => r.id == recipeId);
             if(!recipe) return;
 
-            // Check stock
             let stockHTML = '<strong>Cek Stok:</strong><br>';
             let canMake = Infinity;
             let lowStock = [];
@@ -1502,7 +1695,6 @@
 
             document.getElementById('posStockCheck').innerHTML = stockHTML;
 
-            // Auto fill selling price with 70% margin default
             const defaultPrice = Math.ceil(recipe.hpp / 0.3);
             document.getElementById('posSellingPrice').value = defaultPrice;
 
@@ -1550,7 +1742,6 @@
             const recipe = recipes.find(r => r.id == recipeId);
             if(!recipe) return;
 
-            // Check and deduct stock
             let insufficient = [];
             recipe.composition.forEach(c => {
                 const ing = ingredients.find(i => i.id == c.ingredientId);
@@ -1570,7 +1761,6 @@
                 return;
             }
 
-            // Deduct stock
             recipe.composition.forEach(c => {
                 const ing = ingredients.find(i => i.id == c.ingredientId);
                 if(ing) {
@@ -1583,7 +1773,6 @@
 
             localStorage.setItem('coffeeIngredients', JSON.stringify(ingredients));
 
-            // Record transaction
             const transaction = {
                 id: Date.now(),
                 recipeId,
@@ -1600,7 +1789,6 @@
             transactions.push(transaction);
             localStorage.setItem('coffeeTransactions', JSON.stringify(transactions));
 
-            // Reset POS form
             document.getElementById('posMenuSelect').value = '';
             document.getElementById('posQty').value = '1';
             document.getElementById('posSellingPrice').value = '';
@@ -1610,7 +1798,6 @@
             document.getElementById('posRevenue').textContent = 'Rp 0';
             document.getElementById('posProfit').textContent = 'Rp 0';
 
-            // Refresh all views
             renderIngredients();
             renderInventory();
             renderPosMenu();
@@ -1657,7 +1844,6 @@
             const t = transactions[tIndex];
             const recipe = recipes.find(r => r.id == t.recipeId);
 
-            // Return stock
             if(recipe) {
                 recipe.composition.forEach(c => {
                     const ing = ingredients.find(i => i.id == c.ingredientId);
@@ -1716,7 +1902,6 @@
 
             alerts.innerHTML = alertHTML || '<div style="color:#2ecc71; margin-bottom:15px;">✅ Semua stok aman</div>';
 
-            // Update restock select
             const restockSelect = document.getElementById('restockIng');
             if(restockSelect) {
                 const ingOptions = ingredients.map(ing => 
@@ -1725,7 +1910,6 @@
                 restockSelect.innerHTML = '<option value="">Pilih Bahan...</option>' + ingOptions;
             }
 
-            // Usage today
             const today = new Date().toDateString();
             const todayTrans = transactions.filter(t => new Date(t.time).toDateString() === today);
 
@@ -1765,7 +1949,7 @@
             if(!ing) return;
 
             ing.stock += qty;
-            ing.initialStock += qty; // Also increase initial stock reference
+            ing.initialStock += qty;
             localStorage.setItem('coffeeIngredients', JSON.stringify(ingredients));
 
             document.getElementById('restockQty').value = '';
@@ -1846,6 +2030,24 @@
                 recReport.innerHTML = html;
             }
 
+            const costReport = document.getElementById('reportCosts');
+            const daily = getDailyFixedCost();
+            const monthly = operationalCosts.electricity + operationalCosts.gas + 
+                          operationalCosts.water + operationalCosts.rent + operationalCosts.other;
+            const totalMonthly = monthly + (operationalCosts.salary * 30);
+
+            costReport.innerHTML = `
+                <table style="width:100%; border-collapse:collapse; font-size:0.9em;">
+                    <tr style="background:#e94560; color:white;"><th style="padding:10px;">Komponen</th><th>Per Bulan</th><th>Per Hari</th></tr>
+                    <tr><td style="padding:8px;">Gaji Karyawan</td><td style="padding:8px; text-align:right;">Rp ${(operationalCosts.salary * 30).toLocaleString()}</td><td style="padding:8px; text-align:right;">Rp ${operationalCosts.salary.toLocaleString()}</td></tr>
+                    <tr><td style="padding:8px;">Listrik</td><td style="padding:8px; text-align:right;">Rp ${operationalCosts.electricity.toLocaleString()}</td><td style="padding:8px; text-align:right;">Rp ${(operationalCosts.electricity/30).toLocaleString(undefined, {maximumFractionDigits:0})}</td></tr>
+                    <tr><td style="padding:8px;">Gas</td><td style="padding:8px; text-align:right;">Rp ${operationalCosts.gas.toLocaleString()}</td><td style="padding:8px; text-align:right;">Rp ${(operationalCosts.gas/30).toLocaleString(undefined, {maximumFractionDigits:0})}</td></tr>
+                    <tr><td style="padding:8px;">Air</td><td style="padding:8px; text-align:right;">Rp ${operationalCosts.water.toLocaleString()}</td><td style="padding:8px; text-align:right;">Rp ${(operationalCosts.water/30).toLocaleString(undefined, {maximumFractionDigits:0})}</td></tr>
+                    <tr><td style="padding:8px;">Sewa</td><td style="padding:8px; text-align:right;">Rp ${operationalCosts.rent.toLocaleString()}</td><td style="padding:8px; text-align:right;">Rp ${(operationalCosts.rent/30).toLocaleString(undefined, {maximumFractionDigits:0})}</td></tr>
+                    <tr style="font-weight:700; background:rgba(233,69,96,0.2);"><td style="padding:10px;">TOTAL</td><td style="padding:10px; text-align:right;">Rp ${totalMonthly.toLocaleString()}</td><td style="padding:10px; text-align:right;">Rp ${daily.toLocaleString(undefined, {maximumFractionDigits:0})}</td></tr>
+                </table>
+            `;
+
             const transReport = document.getElementById('reportTransactions');
             const today = new Date().toDateString();
             const todayTrans = transactions.filter(t => new Date(t.time).toDateString() === today);
@@ -1914,16 +2116,28 @@
                 localStorage.removeItem('coffeeIngredients');
                 localStorage.removeItem('coffeeRecipes');
                 localStorage.removeItem('coffeeTransactions');
+                localStorage.removeItem('coffeeCosts');
                 ingredients = [];
                 recipes = [];
                 transactions = [];
+                operationalCosts = {
+                    salary: 100000,
+                    electricity: 150000,
+                    gas: 50000,
+                    water: 140000,
+                    rent: 300000,
+                    other: 0
+                };
                 if(editingRecipeId) cancelEdit();
+                loadCostInputs();
                 renderIngredients();
                 renderRecipes();
                 updateIngredientSelects();
                 renderTransactions();
                 renderInventory();
                 renderPosMenu();
+                renderCostSummary();
+                renderBEPAnalysis();
                 alert('Semua data telah dihapus!');
             }
         }
